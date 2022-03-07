@@ -1,0 +1,11 @@
+colorama
+dlib
+editdistance
+imutils
+Keras
+Keras-Applications
+Keras-Preprocessing
+matplotlib
+# opencv-python
+progress
+sk-video

@@ -1,0 +1,9 @@
+{
+  "preprocessing": {
+    "dataset_path": "../dataset/lipnet/train",
+    "output_path": "./data/dataset",
+    "predictor_path": "./data/predictors/shape_predictor_68_face_landmarks.dat",
+    "log_path": "./logs",
+    "pattern": "*.mpg"
+  }
+}

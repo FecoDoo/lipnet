@@ -1,33 +1,27 @@
-import fnmatch
 import os
+from typing import List
 
 
-def is_dir(path: str) -> bool:
-	return isinstance(path, str) and os.path.exists(path) and os.path.isdir(path)
+def is_dir(path: os.PathLike) -> bool:
+    return isinstance(path, os.PathLike) and path.exists() and path.is_dir()
 
 
-def is_file(path: str) -> bool:
-	return isinstance(path, str) and os.path.exists(path) and os.path.isfile(path)
+def is_file(path: os.PathLike) -> bool:
+    return isinstance(path, os.PathLike) and path.exists() and path.is_file()
 
 
-def get_file_extension(path: str) -> str:
-	return os.path.splitext(path)[1] if is_file(path) else ''
+def get_file_extension(path: os.PathLike) -> os.PathLike:
+    return path.suffix if is_file(path) else ""
 
 
-def get_file_name(path: str) -> str:
-	return os.path.splitext(os.path.basename(path))[0] if is_file(path) else ''
+def get_file_name(path: os.PathLike) -> os.PathLike:
+    return path.stem if is_file(path) else ""
 
 
-def make_dir_if_not_exists(path: str):
-	if not is_dir(path): os.makedirs(path)
+def make_dir_if_not_exists(path: os.PathLike):
+    if not is_dir(path):
+        os.makedirs(path)
 
 
-def get_files_in_dir(path: str, pattern: str = '*'):
-	for root, _, files in os.walk(path):
-		for f in files:
-			if fnmatch.fnmatch(f, pattern):
-				yield os.path.realpath(os.path.join(root, f))
-
-
-def get_immediate_subdirs(path: str) -> [str]:
-	return [os.path.join(path, s) for s in next(os.walk(path))[1]] if is_dir(path) else []
+def get_immediate_subdirs(path: os.PathLike) -> List[os.PathLike]:
+    return [path.joinpath(s) for s in next(os.walk(path))[1]] if is_dir(path) else []
