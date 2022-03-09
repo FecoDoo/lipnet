@@ -1,9 +1,8 @@
 import numpy as np
-from keras.utils import Sequence
-
 import env
-from common.files import get_file_name
+from keras.utils import Sequence
 from core.helpers.video import get_video_data_from_file
+from typing import List, Tuple
 
 
 class BatchGenerator(Sequence):
@@ -11,7 +10,7 @@ class BatchGenerator(Sequence):
     __video_mean = np.array([env.MEAN_R, env.MEAN_G, env.MEAN_B])
     __video_std = np.array([env.STD_R, env.STD_G, env.STD_B])
 
-    def __init__(self, video_paths: [str], align_hash: dict, batch_size: int):
+    def __init__(self, video_paths: List[str], align_hash: dict, batch_size: int):
         super().__init__()
 
         self.video_paths = video_paths
@@ -26,7 +25,7 @@ class BatchGenerator(Sequence):
     def __len__(self) -> int:
         return self.generator_steps
 
-    def __getitem__(self, idx: int) -> (dict, dict):
+    def __getitem__(self, idx: int) -> Tuple[dict, dict]:
         split_start = idx * self.videos_per_batch
         split_end = split_start + self.videos_per_batch
 
@@ -86,8 +85,8 @@ class BatchGenerator(Sequence):
 
         return inputs, outputs
 
-    def get_data_from_path(self, path: str) -> (np.ndarray, str, np.ndarray, int):
-        align = self.align_hash[get_file_name(path)]
+    def get_data_from_path(self, path: str) -> Tuple[np.ndarray, str, np.ndarray, int]:
+        align = self.align_hash[path.name]
         return (
             get_video_data_from_file(path),
             align.sentence,

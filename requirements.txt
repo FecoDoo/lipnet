@@ -1,18 +1,19 @@
-# LipNet 1.0
+# LipNet 2.0
 # 
-# author: Omar Adrian Salinas Villanueva
-# repo: http://www.github.com/omarsalinas16/lipnet
+# author: Omar Adrian Salinas Villanueva, Yao Kai
+# repo: https://github.com/fecodoo/lipnet
+# upstream: http://www.github.com/omarsalinas16/lipnet
 # license: Apache License, Version 2.0
 
-colorama==0.3.9
-dlib==19.15.0
-editdistance==0.4
-imutils==0.5.1
-Keras==2.2.2
-Keras-Applications==1.0.4
-Keras-Preprocessing==1.0.2
-matplotlib==2.2.3
+colorama==0.4.4
+dlib==19.23.0
+editdistance==0.6.0
+imutils==0.5.4
+Keras==2.3.1
+Keras-Applications==1.0.8
+Keras-Preprocessing==1.1.2
+matplotlib==3.2.2
 opencv-python==3.4.2.17
-progress==1.4
+progress==1.6
 sk-video==1.1.10
-tensorflow-gpu==1.10.0
+tensorflow-gpu==2.4.1

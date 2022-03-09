@@ -1,8 +1,4 @@
 import json
-import os
-
-from importlib_metadata import pathlib
-from common.files import get_file_extension, is_dir, is_file
 from jsonschema import validate
 from functools import wraps
 from pathlib import Path
@@ -17,8 +13,14 @@ def validate_preprocessing_config(func):
         root_path = kwargs.get("root_path", None)
         config_path = kwargs.get("config_path", None)
 
-        if not is_file(config_path):
-            raise FileNotFoundError("Invalid path to config file")
+        if not root_path:
+            raise ValueError("Missing root_path")
+
+        if not config_path:
+            raise ValueError("Missing config_path")
+
+        if not Path(config_path).is_file():
+            raise FileNotFoundError("Invalid path of config file")
 
         schema = {
             "type": "object",
@@ -36,29 +38,34 @@ def validate_preprocessing_config(func):
 
         validate(instance=config, schema=schema)
 
-        if not is_dir(root_path.joinpath(config["dataset_path"]).resolve()):
+        # dataset path
+        if not root_path.joinpath(config["dataset_path"]).resolve().is_dir():
             raise NotADirectoryError(
                 f"Invalid path to dataset directory: {config['dataset_path']}"
             )
 
-        if not is_dir(root_path.joinpath(config["output_path"]).resolve()):
-            raise NotADirectoryError(
-                f"Invalid path to output directory: {config['output_path']}"
-            )
+        # output path
+        output_path = root_path.joinpath(config["output_path"]).resolve()
+        if not output_path.is_dir():
+            output_path.mkdir()
 
-        if not is_file(root_path.joinpath(config["predictor_path"]).resolve()):
+        # predictor
+        if not root_path.joinpath(config["predictor_path"]).resolve().is_file():
             raise FileNotFoundError(
                 f"Invalid path to predictor file: {config['predictor_path']}"
             )
 
-        if (
-            get_file_extension(root_path.joinpath(config["predictor_path"]).resolve())
-            != ".dat"
-        ):
+        if not root_path.joinpath(config["cnn_predictor_path"]).resolve().is_file():
+            raise FileNotFoundError(
+                f"Invalid path to predictor file: {config['cnn_predictor_path']}"
+            )
+
+        if root_path.joinpath(config["predictor_path"]).resolve().suffix != ".dat":
             raise ValueError("Invalid predictor file type")
 
-        if not is_dir(root_path.joinpath(config["log_path"]).resolve()):
-            raise FileNotFoundError("Invalid path to logs directory")
+        # log path
+        if not root_path.joinpath(config["log_path"]).resolve().is_dir():
+            raise FileNotFoundError("Invalid path of log directory")
 
         return func(*args, **kwargs)
 

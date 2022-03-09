@@ -1,11 +1,10 @@
 import os
 import pickle
 import random
-
-from common.files import get_file_name, get_files_in_dir, get_immediate_subdirs, is_file
+from typing import Tuple, Dict
 from core.generators.batch_generator import BatchGenerator
 from core.helpers.align import Align, align_from_file
-
+from pathlib import Path
 
 class DatasetGenerator(object):
     def __init__(
@@ -17,8 +16,8 @@ class DatasetGenerator(object):
         val_split: float,
         use_cache: bool = True,
     ):
-        self.dataset_path = os.path.realpath(dataset_path)
-        self.aligns_path = os.path.realpath(aligns_path)
+        self.dataset_path = Path(os.path.realpath(dataset_path)).resolve()
+        self.aligns_path = Path(os.path.realpath(aligns_path)).resolve()
         self.batch_size = batch_size
         self.max_string = max_string
         self.val_split = val_split
@@ -32,7 +31,7 @@ class DatasetGenerator(object):
     def build_dataset(self):
         cache_path = self.dataset_path.rstrip("/") + ".cache"
 
-        if self.use_cache and is_file(cache_path):
+        if self.use_cache and cache_path.is_file():
             print("\nLoading dataset list from cache...\n")
 
             with open(cache_path, "rb") as f:
@@ -67,12 +66,12 @@ class DatasetGenerator(object):
 
     @staticmethod
     def get_numpy_files_in_dir(path: str) -> list:
-        return [f for f in get_files_in_dir(path, "*.npy")]
+        return [f for f in path.glob("*.npy")]
 
     def get_speaker_groups(self, path: str) -> list:
         speaker_groups = []
 
-        for sub_dir in get_immediate_subdirs(path):
+        for sub_dir in [x for x in path.iterdir() if x.is_dir()]:
             videos_in_group = self.get_numpy_files_in_dir(sub_dir)
             random.shuffle(videos_in_group)
 
@@ -81,7 +80,7 @@ class DatasetGenerator(object):
         return speaker_groups
 
     @staticmethod
-    def split_speaker_groups(groups: list, val_split: float) -> (list, list):
+    def split_speaker_groups(groups: list, val_split: float) -> Tuple[list, list]:
         train_list = []
         val_list = []
 
@@ -94,11 +93,11 @@ class DatasetGenerator(object):
 
         return train_list, val_list
 
-    def generate_align_hash(self, videos: list) -> {str: Align}:
+    def generate_align_hash(self, videos: list) -> Dict[str:Align]:
         align_hash = {}
 
         for path in videos:
-            video_name = get_file_name(path)
+            video_name = path.name
             align_path = os.path.join(self.aligns_path, video_name) + ".align"
 
             align_hash[video_name] = align_from_file(align_path, self.max_string)
