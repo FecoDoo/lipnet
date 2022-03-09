@@ -1,6 +1,6 @@
-from keras import backend as k
-from keras.models import Model
-from keras.optimizers import Adam
+from tensorflow.keras import backend as k
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
 
 import core.model.layers as layers
 import env

@@ -1,11 +1,11 @@
-from keras import backend as k
-from keras.layers import Input
-from keras.layers.convolutional import Conv3D, ZeroPadding3D
-from keras.layers.core import Activation, Dense, Flatten, Lambda, SpatialDropout3D
-from keras.layers.normalization import BatchNormalization
-from keras.layers.pooling import MaxPooling3D
-from keras.layers.recurrent import GRU
-from keras.layers.wrappers import Bidirectional, TimeDistributed
+from tensorflow.keras import backend as k
+from tensorflow.keras.layers import Input
+from tensorflow.keras.layers import Conv3D, ZeroPadding3D
+from tensorflow.keras.layers import Activation, Dense, Flatten, Lambda, SpatialDropout3D
+from tensorflow.keras.layers import BatchNormalization
+from tensorflow.keras.layers import MaxPooling3D
+from tensorflow.keras.layers import GRU
+from tensorflow.keras.layers import Bidirectional, TimeDistributed
 
 
 INPUT_TYPE = "float32"

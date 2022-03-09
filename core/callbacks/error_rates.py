@@ -1,21 +1,21 @@
 import csv
 import os
+from pickle import LIST
 
 import editdistance
 import numpy as np
 from keras.callbacks import Callback
 from keras.utils import Sequence
-
-from common.files import make_dir_if_not_exists
 from core.decoding.decoder import Decoder
 from core.model.lipnet import LipNet
 from core.utils.wer import wer_sentence
+from typing import List, Tuple
 
 
 class ErrorRates(Callback):
     def __init__(
         self,
-        output_path: str,
+        output_path: os.PathLike,
         lipnet: LipNet,
         val_generator: Sequence,
         decoder: Decoder,
@@ -58,8 +58,8 @@ class ErrorRates(Callback):
 
     @staticmethod
     def calculate_mean_generic(
-        data: [tuple], mean_length: int, evaluator
-    ) -> (float, float):
+        data: List[tuple], mean_length: int, evaluator
+    ) -> Tuple(float, float):
         values = [float(evaluator(x[0], x[1])) for x in data]
 
         total = 0
@@ -72,11 +72,11 @@ class ErrorRates(Callback):
         length = len(data)
         return total / length, total_norm / length
 
-    def calculate_wer(self, data: [tuple]) -> (float, float):
+    def calculate_wer(self, data: List[tuple]) -> Tuple(float, float):
         mean_length = int(np.mean([len(d[1].split()) for d in data]))
         return self.calculate_mean_generic(data, mean_length, wer_sentence)
 
-    def calculate_cer(self, data: [tuple]) -> (float, float):
+    def calculate_cer(self, data: List[tuple]) -> Tuple(float, float):
         mean_length = int(np.mean([len(d[1]) for d in data]))
         return self.calculate_mean_generic(data, mean_length, editdistance.eval)
 
@@ -96,7 +96,7 @@ class ErrorRates(Callback):
 
     def on_train_begin(self, logs=None):
         output_dir = os.path.dirname(self.output_path)
-        make_dir_if_not_exists(output_dir)
+        output_dir.mkdir()
 
         with open(self.output_path, "w") as f:
             writer = csv.writer(f)

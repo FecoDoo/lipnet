@@ -9,21 +9,20 @@ from keras.callbacks import CSVLogger, ModelCheckpoint, TensorBoard
 
 import env
 from common.decode import create_decoder
-from common.files import is_dir, make_dir_if_not_exists
 from core.callbacks.error_rates import ErrorRates
 from core.generators.dataset_generator import DatasetGenerator
 from core.model.lipnet import LipNet
-
+from pathlib import Path
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 init(autoreset=True)
 
 
-ROOT_PATH  = os.path.dirname(os.path.realpath(__file__))
-OUTPUT_DIR = os.path.realpath(os.path.join(ROOT_PATH, 'data', 'res'))
-LOG_DIR    = os.path.realpath(os.path.join(ROOT_PATH, 'data', 'res_logs'))
+ROOT_PATH  = Path(os.path.dirname(os.path.realpath(__file__))).resolve()
+OUTPUT_DIR = Path(os.path.realpath(os.path.join(ROOT_PATH, 'data', 'res'))).resolve()
+LOG_DIR    = Path(os.path.realpath(os.path.join(ROOT_PATH, 'data', 'res_logs'))).resolve()
 
-DICTIONARY_PATH = os.path.realpath(os.path.join(ROOT_PATH, 'data', 'dictionaries', 'grid.txt'))
+DICTIONARY_PATH = Path(os.path.realpath(ROOT_PATH.join(os.path.join('data', 'dictionaries', 'grid.txt')))).resolve()
 
 
 class TrainingConfig(NamedTuple):
@@ -70,11 +69,11 @@ def main():
 	epochs       = args['epochs']
 	ignore_cache = args['ignore_cache']
 
-	if not is_dir(dataset_path):
+	if not dataset_path.is_dir():
 		print(Fore.RED + '\nERROR: The dataset path is not a directory')
 		return
 
-	if not is_dir(aligns_path):
+	if not aligns_path.is_dir():
 		print(Fore.RED + '\nERROR: The aligns path is not a directory')
 		return
 
@@ -94,8 +93,10 @@ def train(run_name: str, config: TrainingConfig):
 	print('For dataset at: {}'.format(config.dataset_path))
 	print('With aligns at: {}'.format(config.aligns_path))
 
-	make_dir_if_not_exists(OUTPUT_DIR)
-	make_dir_if_not_exists(LOG_DIR)
+	if not OUTPUT_DIR.exists():
+		OUTPUT_DIR.mkdir() 
+	if not LOG_DIR.exists():
+		LOG_DIR.mkdir()
 
 	lipnet = LipNet(config.frame_count, config.image_channels, config.image_height, config.image_width, config.max_string).compile_model()
 
@@ -124,19 +125,22 @@ def train(run_name: str, config: TrainingConfig):
 
 
 def create_callbacks(run_name: str, lipnet: LipNet, datagen: DatasetGenerator) -> list:
-	run_log_dir = os.path.join(LOG_DIR, run_name)
-	make_dir_if_not_exists(run_log_dir)
+	run_log_dir = LOG_DIR.joinpath(run_name)
+	
+	if not run_log_dir.exists():
+		run_log_dir.mkdir()
 
 	# Tensorboard
-	tensorboard = TensorBoard(log_dir=run_log_dir)
+	tensorboard = TensorBoard(log_dir=str(run_log_dir))
 
 	# Training logger
-	csv_log    = os.path.join(run_log_dir, 'training.csv')
+	csv_log    = run_log_dir.joinpath('training.csv')
 	csv_logger = CSVLogger(csv_log, separator=',', append=True)
 
 	# Model checkpoint saver
-	checkpoint_dir = os.path.join(OUTPUT_DIR, run_name)
-	make_dir_if_not_exists(checkpoint_dir)
+	checkpoint_dir = OUTPUT_DIR.joinpath(run_name)
+	if not checkpoint_dir.exists():
+		checkpoint_dir.mkdir()
 
 	checkpoint_template = os.path.join(checkpoint_dir, "lipnet_{epoch:03d}_{val_loss:.2f}.hdf5")
 	checkpoint = ModelCheckpoint(checkpoint_template, monitor='val_loss', save_weights_only=True, mode='auto', period=1, verbose=1)
