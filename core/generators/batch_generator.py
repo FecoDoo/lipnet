@@ -1,6 +1,6 @@
 import numpy as np
 import env
-from keras.utils import Sequence
+from tensorflow.keras.utils import Sequence
 from core.helpers.video import get_video_data_from_file
 from typing import List, Tuple
 
@@ -81,12 +81,13 @@ class BatchGenerator(Sequence):
             "sentences": sentences,
         }
 
-        outputs = {"ctc": np.zeros([batch_size])}  # dummy data for dummy loss function
+        # dummy data for dummy loss function
+        outputs = {"ctc": np.zeros([batch_size])}
 
         return inputs, outputs
 
     def get_data_from_path(self, path: str) -> Tuple[np.ndarray, str, np.ndarray, int]:
-        align = self.align_hash[path.name]
+        align = self.align_hash[path.stem]
         return (
             get_video_data_from_file(path),
             align.sentence,

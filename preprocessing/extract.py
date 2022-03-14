@@ -1,4 +1,5 @@
 import os
+from tokenize import group
 import env
 import cv2
 import numpy as np
@@ -49,7 +50,7 @@ class ExtractorROI:
         if verbose:
             self.logger.debug("{}\n{}".format(DEBUG_LOG, video_path.name))
 
-        video_data = skvideo.io.vread(str(video_path))
+        video_data = skvideo.io.vread(video_path.as_posix())
         video_data_len = len(video_data)
 
         if video_data_len != env.FRAME_COUNT:
@@ -144,17 +145,17 @@ def extract(
         pattern = config["pattern"]
 
         if detector_type == "cnn":
-            detector = dlib.cnn_face_detection_model_v1(str(cnn_predictor_path))
+            detector = dlib.cnn_face_detection_model_v1(cnn_predictor_path.as_posix())
             logger.critical(f"{CRITICAL_LOG}load cnn detector")
         else:
             detector = dlib.get_frontal_face_detector()
             logger.critical(f"{CRITICAL_LOG}load svm detector")
 
-        predictor = dlib.shape_predictor(str(predictor_path))
+        predictor = dlib.shape_predictor(predictor_path.as_posix())
 
         video_target_dir = output_path.joinpath(groupname)
-        if not video_target_dir.exists():
-            video_target_dir.mkdir()
+
+        video_target_dir.mkdir(exist_ok=True)
 
         videos_failed = []
 
@@ -162,11 +163,7 @@ def extract(
 
         extractor = ExtractorROI(detector=detector, predictor=predictor, logger=logger)
 
-        count = 0
         for file_path in tqdm(group_path.glob(pattern)):
-            if count >= 2:
-                break
-            count += 1
             video_file_name = file_path.stem
             video_target_path = video_target_dir.joinpath(video_file_name + ".npy")
 
@@ -179,10 +176,53 @@ def extract(
             if not extractor.video_to_frames(file_path, video_target_path):
                 videos_failed.append(video_file_name)
 
-        with open(str(error_log_path), "w") as f:
+        with open(error_log_path.as_posix(), "w") as f:
             f.writelines(videos_failed)
 
     except Exception as e:
         logger.error(f"{ERROR_LOG}{e}")
     finally:
         logger.info(f"{INFO_LOG}{group_path.name} completed.")
+
+
+def extract_single(
+    video_name: str,
+    root_path: os.PathLike,
+    group_name: os.PathLike,
+    config: Dict,
+    logger,
+):
+    try:
+        output_path = root_path.joinpath(
+            os.path.join(config["output_path"], group_name, video_name + ".npy")
+        ).resolve()
+        predictor_path = root_path.joinpath(config["predictor_path"]).resolve()
+        cnn_predictor_path = root_path.joinpath(config["cnn_predictor_path"]).resolve()
+
+        video_path = root_path.joinpath(
+            os.path.join(config["dataset_path"], group_name, video_name + ".mpg")
+        ).resolve()
+
+        if detector_type == "cnn":
+            detector = dlib.cnn_face_detection_model_v1(cnn_predictor_path.as_posix())
+            logger.critical(f"{CRITICAL_LOG}load cnn detector")
+        else:
+            detector = dlib.get_frontal_face_detector()
+            logger.critical(f"{CRITICAL_LOG}load svm detector")
+
+        predictor = dlib.shape_predictor(predictor_path.as_posix())
+
+        logger.info(f"{INFO_LOG}start process {group_name}")
+
+        extractor = ExtractorROI(detector=detector, predictor=predictor, logger=logger)
+
+        if output_path.is_file():
+            logger.info(
+                f"{INFO_LOG}Video {group_name + '-' + video_name} already exists, skip preprocessing"
+            )
+
+        if not extractor.video_to_frames(video_path, output_path):
+            logger.error(f"{ERROR_LOG}video extracting error")
+
+    except Exception as e:
+        logger.error(f"{ERROR_LOG}{e}")

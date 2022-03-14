@@ -9,7 +9,7 @@ class Decoder(object):
         greedy: bool = True,
         beam_width: int = 200,
         top_paths: int = 1,
-        postprocessors = None,
+        postprocessors=None,
     ):
         self.greedy = greedy
         self.beam_width = beam_width
