@@ -2,6 +2,7 @@
 # Source: https://github.com/rizkiarm/LipNet/blob/master/lipnet/lipreading/helpers.py
 from typing import List
 
+
 def text_to_labels(text: str) -> List[chr]:
     ret = []
     for char in text:

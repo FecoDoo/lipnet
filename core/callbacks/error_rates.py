@@ -4,8 +4,8 @@ from pickle import LIST
 
 import editdistance
 import numpy as np
-from keras.callbacks import Callback
-from keras.utils import Sequence
+from tensorflow.keras.callbacks import Callback
+from tensorflow.keras.utils import Sequence
 from core.decoding.decoder import Decoder
 from core.model.lipnet import LipNet
 from core.utils.wer import wer_sentence
@@ -19,7 +19,7 @@ class ErrorRates(Callback):
         lipnet: LipNet,
         val_generator: Sequence,
         decoder: Decoder,
-        samples: int = 256,
+        samples: int = 16,
     ):
         super().__init__()
 
@@ -59,24 +59,21 @@ class ErrorRates(Callback):
     @staticmethod
     def calculate_mean_generic(
         data: List[tuple], mean_length: int, evaluator
-    ) -> Tuple(float, float):
-        values = [float(evaluator(x[0], x[1])) for x in data]
-
-        total = 0
-        total_norm = 0
-
-        for v in values:
-            total += v
-            total_norm += v / mean_length
+    ) -> Tuple[float, float]:
+        values = np.array([float(evaluator(x[0], x[1])) for x in data])
 
         length = len(data)
-        return total / length, total_norm / length
+        total = np.sum(values)
+        mean = total / length
+        total_norm = total / mean_length
 
-    def calculate_wer(self, data: List[tuple]) -> Tuple(float, float):
+        return mean, total_norm / length
+
+    def calculate_wer(self, data: List[tuple]) -> Tuple[float, float]:
         mean_length = int(np.mean([len(d[1].split()) for d in data]))
         return self.calculate_mean_generic(data, mean_length, wer_sentence)
 
-    def calculate_cer(self, data: List[tuple]) -> Tuple(float, float):
+    def calculate_cer(self, data: List[tuple]) -> Tuple[float, float]:
         mean_length = int(np.mean([len(d[1]) for d in data]))
         return self.calculate_mean_generic(data, mean_length, editdistance.eval)
 
@@ -95,8 +92,8 @@ class ErrorRates(Callback):
         }
 
     def on_train_begin(self, logs=None):
-        output_dir = os.path.dirname(self.output_path)
-        output_dir.mkdir()
+        output_dir = self.output_path.parent
+        output_dir.mkdir(exist_ok=True)
 
         with open(self.output_path, "w") as f:
             writer = csv.writer(f)

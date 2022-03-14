@@ -46,8 +46,7 @@ def validate_preprocessing_config(func):
 
         # output path
         output_path = root_path.joinpath(config["output_path"]).resolve()
-        if not output_path.is_dir():
-            output_path.mkdir()
+        output_path.mkdir(exist_ok=True)
 
         # predictor
         if not root_path.joinpath(config["predictor_path"]).resolve().is_file():

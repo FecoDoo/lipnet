@@ -62,7 +62,7 @@ def generator(root_path: os.PathLike, config_path: os.PathLike):
                         logger,
                     ),
                 )
-                for group_path in groups[:6]
+                for group_path in groups
             ]
 
             for p in res:

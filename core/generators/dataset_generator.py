@@ -6,6 +6,7 @@ from core.generators.batch_generator import BatchGenerator
 from core.helpers.align import Align, align_from_file
 from pathlib import Path
 
+
 class DatasetGenerator(object):
     def __init__(
         self,
@@ -29,7 +30,7 @@ class DatasetGenerator(object):
         self.build_dataset()
 
     def build_dataset(self):
-        cache_path = self.dataset_path.rstrip("/") + ".cache"
+        cache_path = self.dataset_path.joinpath(".cache")
 
         if self.use_cache and cache_path.is_file():
             print("\nLoading dataset list from cache...\n")
@@ -93,11 +94,11 @@ class DatasetGenerator(object):
 
         return train_list, val_list
 
-    def generate_align_hash(self, videos: list) -> Dict[str:Align]:
+    def generate_align_hash(self, videos: list) -> Dict[str, Align]:
         align_hash = {}
 
         for path in videos:
-            video_name = path.name
+            video_name = path.stem
             align_path = os.path.join(self.aligns_path, video_name) + ".align"
 
             align_hash[video_name] = align_from_file(align_path, self.max_string)

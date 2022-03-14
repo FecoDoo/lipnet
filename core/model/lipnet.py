@@ -89,7 +89,7 @@ class LipNet(object):
     def compile_model(self, optimizer=None):
         if optimizer is None:
             optimizer = Adam(
-                lr=ADAM_LEARN_RATE,
+                learning_rate=ADAM_LEARN_RATE,
                 beta_1=ADAM_F_MOMENTUM,
                 beta_2=ADAM_S_MOMENTUM,
                 epsilon=ADAM_STABILITY,
