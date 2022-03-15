@@ -1,17 +1,20 @@
+from inspect import trace
 import json
 import os
 import logging
-from multiprocessing import Pool, log_to_stderr
+import traceback
+import env
+from multiprocessing import Pool, log_to_stderr, Lock
 from utils.validator import validate_preprocessing_config
 from pathlib import Path
-from preprocessing.extract import extract
+from utils.extract import extract
 from colorama import Fore, init, deinit
 
 INFO_LOG = Fore.BLUE
 ERROR_LOG = Fore.RED
 DEBUG_LOG = Fore.YELLOW
 
-flag = "pro"
+flag = "dev"
 
 
 @validate_preprocessing_config
@@ -45,22 +48,18 @@ def generator(root_path: os.PathLike, config_path: os.PathLike):
                 groups.remove(i)
                 continue
 
-    except Exception as e:
-        print(e)
+    except Exception:
+        print(traceback.format_exc())
 
-    if flag == "dev":
+    if env.DEV:
+        # dev
         extract(groups[0], root_path, config, logger)
     else:
+        lock = Lock()
         with Pool(processes=None) as pool:
             res = [
                 pool.apply_async(
-                    extract,
-                    args=(
-                        group_path,
-                        root_path,
-                        config,
-                        logger,
-                    ),
+                    extract, args=(group_path, root_path, config, logger, lock,),
                 )
                 for group_path in groups
             ]
@@ -75,8 +74,9 @@ if __name__ == "__main__":
 
     init(autoreset=True)
 
-    root_path = Path(os.path.dirname(__file__))
+    root_path = Path(__file__).parents[0]
     config_path = root_path.joinpath("config/config.json")
 
     generator(root_path=root_path, config_path=config_path)
+
     deinit()
