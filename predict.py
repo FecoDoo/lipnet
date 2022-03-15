@@ -17,7 +17,7 @@ from core.helpers.video import (
 )
 from core.model.lipnet import LipNet
 from core.utils.visualization import visualize_video_subtitle
-from preprocessing.extract import extract_video_data
+from utils.extract import extract_video_data
 
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"

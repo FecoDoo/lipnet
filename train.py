@@ -17,8 +17,10 @@ init(autoreset=True)
 
 
 ROOT_PATH = Path(os.path.dirname(os.path.realpath(__file__))).resolve()
-OUTPUT_DIR = Path(os.path.realpath(os.path.join(ROOT_PATH, "data", "res"))).resolve()
-LOG_DIR = Path(os.path.realpath(os.path.join(ROOT_PATH, "data", "res_logs"))).resolve()
+OUTPUT_DIR = Path(os.path.realpath(os.path.join(ROOT_PATH, "data", "models"))).resolve()
+LOG_DIR = Path(
+    os.path.realpath(os.path.join(ROOT_PATH, "data", "runtime_logs"))
+).resolve()
 
 DICTIONARY_PATH = Path(
     os.path.realpath(
@@ -30,8 +32,8 @@ DATETIME_FMT = "%Y-%m-%d-%H-%M-%S"
 
 
 class TrainingConfig(NamedTuple):
-    dataset_path: str
-    aligns_path: str
+    dataset_path: os.PathLike
+    aligns_path: os.PathLike
     epochs: int = 1
     frame_count: int = env.FRAME_COUNT
     image_width: int = env.IMAGE_WIDTH
@@ -61,21 +63,8 @@ def main():
 	"""
     )
 
-    # ap = argparse.ArgumentParser()
-
-    # ap.add_argument('-d', '--dataset-path', required=True, help='Path to the dataset root directory')
-    # ap.add_argument('-a', '--aligns-path', required=True, help='Path to the directory containing all align files')
-    # ap.add_argument('-e', '--epochs', required=False, help='(Optional) Number of epochs to run', type=int, default=1)
-    # ap.add_argument('-ic', '--ignore-cache', required=False, help='(Optional) Force the generator to ignore the cache file', action='store_true', default=False)
-
-    # args = vars(ap.parse_args())
-
-    # dataset_path = Path(os.path.realpath(args['dataset_path'])).resolve()
-    # aligns_path  = Path(os.path.realpath(args['aligns_path'])).resolve()
-    # epochs       = args['epochs']
-    # ignore_cache = args['ignore_cache']
-    dataset_path = Path(os.path.realpath("./data/dataset")).resolve()
-    aligns_path = Path(os.path.realpath("./data/align")).resolve()
+    dataset_path = Path("./data/dataset").resolve()
+    aligns_path = Path("./data/align").resolve()
     epochs = 5
     ignore_cache = True
 
@@ -102,7 +91,7 @@ def main():
     train(timestamp, config)
 
 
-def train(timestamp: str, config: TrainingConfig):
+def train(timestamp: float, config: TrainingConfig):
     print(
         "\nTRAINING: {}\n".format(
             datetime.utcfromtimestamp(timestamp).strftime(DATETIME_FMT)
@@ -156,7 +145,7 @@ def train(timestamp: str, config: TrainingConfig):
     )
 
 
-def create_callbacks(timestamp: str, lipnet: LipNet, datagen: DatasetGenerator) -> list:
+def create_callbacks(timestamp: float, lipnet: LipNet, datagen: DatasetGenerator) -> list:
     timestring = datetime.utcfromtimestamp(timestamp).strftime(DATETIME_FMT)
     run_log_dir = LOG_DIR.joinpath(timestring)
 
@@ -166,8 +155,8 @@ def create_callbacks(timestamp: str, lipnet: LipNet, datagen: DatasetGenerator) 
     tensorboard = TensorBoard(log_dir=run_log_dir.as_posix())
 
     # Training logger
-    csv_log = run_log_dir.joinpath("training.csv")
-    csv_logger = CSVLogger(csv_log, separator=",", append=True)
+    csv_log_path = run_log_dir.joinpath("training.csv")
+    csv_logger = CSVLogger(csv_log_path, separator=",", append=True)
 
     # Model checkpoint saver
     checkpoint_dir = OUTPUT_DIR.joinpath(timestring)

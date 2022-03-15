@@ -8,7 +8,6 @@ import dlib
 from colorama import Fore
 from imutils import face_utils
 from typing import Optional, Dict
-from tqdm import tqdm
 
 FRAME_SHAPE = (env.IMAGE_HEIGHT, env.IMAGE_WIDTH, env.IMAGE_CHANNELS)
 IMAGE_SIZE = (env.IMAGE_HEIGHT, env.IMAGE_WIDTH)
@@ -24,10 +23,7 @@ dlib.DLIB_USE_CUDA = False
 
 class ExtractorROI:
     def __init__(
-        self,
-        detector,
-        predictor,
-        logger,
+        self, detector, predictor, logger,
     ):
         self.detector = detector
         self.predictor = predictor
@@ -128,10 +124,7 @@ class ExtractorROI:
 
 
 def extract(
-    group_path: os.PathLike,
-    root_path: os.PathLike,
-    config: Dict,
-    logger,
+    group_path: os.PathLike, root_path: os.PathLike, config: Dict, logger, lock
 ):
     try:
         groupname = group_path.name
@@ -146,10 +139,10 @@ def extract(
 
         if detector_type == "cnn":
             detector = dlib.cnn_face_detection_model_v1(cnn_predictor_path.as_posix())
-            logger.critical(f"{CRITICAL_LOG}load cnn detector")
+            logger.info(f"{INFO_LOG}load cnn detector")
         else:
             detector = dlib.get_frontal_face_detector()
-            logger.critical(f"{CRITICAL_LOG}load svm detector")
+            logger.info(f"{INFO_LOG}load svm detector")
 
         predictor = dlib.shape_predictor(predictor_path.as_posix())
 
@@ -163,7 +156,7 @@ def extract(
 
         extractor = ExtractorROI(detector=detector, predictor=predictor, logger=logger)
 
-        for file_path in tqdm(group_path.glob(pattern)):
+        for file_path in group_path.glob(pattern):
             video_file_name = file_path.stem
             video_target_path = video_target_dir.joinpath(video_file_name + ".npy")
 
@@ -183,46 +176,3 @@ def extract(
         logger.error(f"{ERROR_LOG}{e}")
     finally:
         logger.info(f"{INFO_LOG}{group_path.name} completed.")
-
-
-def extract_single(
-    video_name: str,
-    root_path: os.PathLike,
-    group_name: os.PathLike,
-    config: Dict,
-    logger,
-):
-    try:
-        output_path = root_path.joinpath(
-            os.path.join(config["output_path"], group_name, video_name + ".npy")
-        ).resolve()
-        predictor_path = root_path.joinpath(config["predictor_path"]).resolve()
-        cnn_predictor_path = root_path.joinpath(config["cnn_predictor_path"]).resolve()
-
-        video_path = root_path.joinpath(
-            os.path.join(config["dataset_path"], group_name, video_name + ".mpg")
-        ).resolve()
-
-        if detector_type == "cnn":
-            detector = dlib.cnn_face_detection_model_v1(cnn_predictor_path.as_posix())
-            logger.critical(f"{CRITICAL_LOG}load cnn detector")
-        else:
-            detector = dlib.get_frontal_face_detector()
-            logger.critical(f"{CRITICAL_LOG}load svm detector")
-
-        predictor = dlib.shape_predictor(predictor_path.as_posix())
-
-        logger.info(f"{INFO_LOG}start process {group_name}")
-
-        extractor = ExtractorROI(detector=detector, predictor=predictor, logger=logger)
-
-        if output_path.is_file():
-            logger.info(
-                f"{INFO_LOG}Video {group_name + '-' + video_name} already exists, skip preprocessing"
-            )
-
-        if not extractor.video_to_frames(video_path, output_path):
-            logger.error(f"{ERROR_LOG}video extracting error")
-
-    except Exception as e:
-        logger.error(f"{ERROR_LOG}{e}")
