@@ -1,5 +1,6 @@
 import numpy as np
 import env
+import os
 from tensorflow.keras.utils import Sequence
 from core.helpers.video import get_video_data_from_file
 from typing import List, Tuple
@@ -10,27 +11,29 @@ class BatchGenerator(Sequence):
     __video_mean = np.array([env.MEAN_R, env.MEAN_G, env.MEAN_B])
     __video_std = np.array([env.STD_R, env.STD_G, env.STD_B])
 
-    def __init__(self, video_paths: List[str], align_hash: dict, batch_size: int):
+    def __init__(
+        self, video_paths: List[os.PathLike], align_hash: dict, batch_size: int
+    ):
         super().__init__()
 
         self.video_paths = video_paths
         self.align_hash = align_hash
         self.batch_size = batch_size
 
-        self.videos_len = len(self.video_paths)
-        self.videos_per_batch = int(np.ceil(self.batch_size / 2))
+        self.n_videos = len(self.video_paths)
+        self.n_videos_per_batch = int(np.ceil(self.batch_size / 2))
 
-        self.generator_steps = int(np.ceil(self.videos_len / self.videos_per_batch))
+        self.generator_steps = int(np.ceil(self.n_videos / self.n_videos_per_batch))
 
     def __len__(self) -> int:
         return self.generator_steps
 
-    def __getitem__(self, idx: int) -> Tuple[dict, dict]:
-        split_start = idx * self.videos_per_batch
-        split_end = split_start + self.videos_per_batch
+    def __getitem__(self, idx: int) -> Tuple[list, list]:
+        split_start = idx * self.n_videos_per_batch
+        split_end = split_start + self.n_videos_per_batch
 
-        if split_end > self.videos_len:
-            split_end = self.videos_len
+        if split_end > self.n_videos:
+            split_end = self.n_videos
 
         videos_batch = self.video_paths[split_start:split_end]
         videos_taken = len(videos_batch)
@@ -73,16 +76,20 @@ class BatchGenerator(Sequence):
         label_length = np.array(label_length)
         sentences = np.array(sentences)
 
-        inputs = {
-            "input": x_data,
-            "labels": y_data,
-            "input_length": input_length,
-            "label_length": label_length,
-            "sentences": sentences,
-        }
+        # inputs = {
+        #     "input": x_data,
+        #     "labels": y_data,
+        #     "input_length": input_length,
+        #     "label_length": label_length,
+        #     "sentences": sentences,
+        # }
+
+        # # dummy data for dummy loss function
+        # outputs = {"ctc": np.zeros([batch_size])}
+        inputs = [x_data, y_data, input_length, label_length]
 
         # dummy data for dummy loss function
-        outputs = {"ctc": np.zeros([batch_size])}
+        outputs = np.zeros((batch_size))
 
         return inputs, outputs
 
