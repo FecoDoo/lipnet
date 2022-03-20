@@ -1,10 +1,10 @@
 import numpy as np
-
+import os
 from tensorflow.keras import backend as k
 
 
-def get_video_data_from_file(path: str) -> np.ndarray:
-    video_data = np.load(path)  # T x H x W x C
+def get_video_data_from_file(path: os.PathLike) -> np.ndarray:
+    video_data = np.load(file=str(path), allow_pickle=False)  # T x H x W x C
     assert video_data.size != 0
     return reshape_and_normalize_video_data(video_data)
 

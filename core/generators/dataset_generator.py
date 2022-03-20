@@ -1,7 +1,7 @@
 import os
 import pickle
 import random
-from typing import Tuple, Dict
+from typing import List, Tuple, Dict
 from core.generators.batch_generator import BatchGenerator
 from core.helpers.align import Align, align_from_file
 from pathlib import Path
@@ -40,7 +40,7 @@ class DatasetGenerator(object):
         else:
             print("\nEnumerating dataset list from disk...\n")
 
-            groups = self.get_speaker_groups(self.dataset_path)
+            groups = self.generate_video_list_by_groups_with_shuffle(self.dataset_path)
             train_videos, val_videos = self.split_speaker_groups(groups, self.val_split)
 
             train_aligns = self.generate_align_hash(train_videos)
@@ -66,10 +66,15 @@ class DatasetGenerator(object):
         self.val_generator = BatchGenerator(val_videos, val_aligns, self.batch_size)
 
     @staticmethod
-    def get_numpy_files_in_dir(path: str) -> list:
-        return [f for f in path.glob("*.npy")]
+    def get_numpy_files_in_dir(path: os.PathLike) -> List[os.PathLike]:
+        return list(path.glob("*.npy"))
 
-    def get_speaker_groups(self, path: str) -> list:
+    def generate_video_list_by_groups_with_shuffle(
+        self, path: os.PathLike
+    ) -> List[list]:
+        """
+        Load video file paths of each speaker group into list and return a list of lists
+        """
         speaker_groups = []
 
         for sub_dir in [x for x in path.iterdir() if x.is_dir()]:
