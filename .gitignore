@@ -168,4 +168,5 @@ data/*
 
 misc/
 logs/
+models/
 custom/

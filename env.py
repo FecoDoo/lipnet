@@ -17,4 +17,7 @@ STD_R = 0.1629
 STD_G = 0.1205
 STD_B = 0.1257
 
-DEV = 1
+# preprocessing & training
+DEV = 0
+USE_CACHE = 1
+EPOCH = 60

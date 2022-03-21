@@ -10,15 +10,15 @@ from pathlib import Path
 class DatasetGenerator(object):
     def __init__(
         self,
-        dataset_path: str,
-        aligns_path: str,
+        dataset_path: os.PathLike,
+        aligns_path: os.PathLike,
         batch_size: int,
         max_string: int,
         val_split: float,
         use_cache: bool = True,
     ):
-        self.dataset_path = Path(os.path.realpath(dataset_path)).resolve()
-        self.aligns_path = Path(os.path.realpath(aligns_path)).resolve()
+        self.dataset_path = dataset_path
+        self.aligns_path = aligns_path
         self.batch_size = batch_size
         self.max_string = max_string
         self.val_split = val_split
@@ -47,8 +47,9 @@ class DatasetGenerator(object):
             val_aligns = self.generate_align_hash(val_videos)
 
             with open(cache_path, "wb") as f:
-                pickle.dump((train_videos, train_aligns, val_videos, val_aligns), f)
+                pickle.dump(obj=(train_videos, train_aligns, val_videos, val_aligns), file=f)
 
+        
         print(
             "Found {} videos and {} aligns for training".format(
                 len(train_videos), len(train_aligns)
