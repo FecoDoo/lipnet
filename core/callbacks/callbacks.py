@@ -1,10 +1,8 @@
 import csv
 import os
-from pickle import LIST
-
 import editdistance
 import numpy as np
-from tensorflow.keras.callbacks import Callback
+from tensorflow.keras.callbacks import Callback, CSVLogger, ModelCheckpoint, TensorBoard
 from tensorflow.keras.utils import Sequence
 from core.decoding.decoder import Decoder
 from core.model.lipnet import LipNet
@@ -58,7 +56,7 @@ class ErrorRates(Callback):
 
     @staticmethod
     def calculate_mean_generic(
-        data: List[tuple], mean_length: int, evaluator
+        data: List[tuple], mean_length: int, evaluator: callable
     ) -> Tuple[float, float]:
         values = np.array([float(evaluator(x[0], x[1])) for x in data])
 
@@ -127,3 +125,39 @@ class ErrorRates(Callback):
                     statistics["cer_norm"],
                 ]
             )
+
+
+class ModelCheckpoint(ModelCheckpoint):
+    def __init__(
+        self,
+        filepath,
+        monitor="val_loss",
+        verbose=0,
+        save_best_only=False,
+        save_weights_only=False,
+        mode="auto",
+        save_freq="epoch",
+        options=None,
+        **kwargs
+    ):
+        super().__init__(
+            filepath,
+            monitor,
+            verbose,
+            save_best_only,
+            save_weights_only,
+            mode,
+            save_freq,
+            options,
+            **kwargs
+        )
+
+
+class TensorBoard(TensorBoard):
+    def __init__(self, log_dir='logs', histogram_freq=0, write_graph=True, write_images=False, write_steps_per_second=False, update_freq='epoch', profile_batch=2, embeddings_freq=0, embeddings_metadata=None, **kwargs):
+        super().__init__(log_dir, histogram_freq, write_graph, write_images, write_steps_per_second, update_freq, profile_batch, embeddings_freq, embeddings_metadata, **kwargs)
+
+
+class CSVLogger(CSVLogger):
+    def __init__(self, filename, separator=',', append=False):
+        super().__init__(filename, separator, append)
