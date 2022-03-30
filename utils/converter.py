@@ -10,18 +10,13 @@ from typing import Optional, Tuple
 from dlib import get_frontal_face_detector, shape_predictor
 
 
-class Extractor:
+class Converter:
     def __init__(self, logger):
         self.logger = logger
         self.frame_shape = (env.IMAGE_HEIGHT, env.IMAGE_WIDTH, env.IMAGE_CHANNELS)
         self.image_size = (env.IMAGE_HEIGHT, env.IMAGE_WIDTH)
         self.detector = get_frontal_face_detector()
-        self.predictor = shape_predictor(
-            os.path.join(
-                os.path.realpath(os.path.dirname(__file__)),
-                "predictors/shape_predictor_68_face_landmarks.dat",
-            )
-        )
+        self.predictor = shape_predictor(env.DLIB_SHAPE_PREDICTOR_PATH)
 
         _, (self.mouth_x_idx, self.mouth_y_idx) = list(
             face_utils.FACIAL_LANDMARKS_IDXS.items()
@@ -87,7 +82,7 @@ class Extractor:
 
         shape = face_utils.shape_to_np(self.predictor(gray, detected[0]))
 
-        return shape[self.mouth_x_idx:self.mouth_y_idx]
+        return shape[self.mouth_x_idx : self.mouth_y_idx]
 
     @staticmethod
     def crop_image(image: np.ndarray, center: tuple, size: tuple) -> np.ndarray:

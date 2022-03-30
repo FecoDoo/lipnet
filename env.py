@@ -21,3 +21,14 @@ STD_B = 0.1257
 DEV = 0
 USE_CACHE = 1
 EPOCH = 60
+
+VIDEO_PATTERN = "*.mpg"
+
+# prediction
+DICTIONARY_PATH = "data/dictionaries/grid.txt"
+MODEL_PATH = "models/lipnet.h5"
+VIDEO_PATH = "videos"
+DLIB_SHAPE_PREDICTOR_PATH = "data/dlib/shape_predictor_68_face_landmarks.dat"
+
+# others
+TF_CPP_MIN_LOG_LEVEL = "3"

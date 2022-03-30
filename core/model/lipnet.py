@@ -15,11 +15,11 @@ ADAM_STABILITY = 1e-08
 class LipNet(object):
     def __init__(
         self,
-        frame_count: int,
-        image_channels: int,
-        image_height: int,
-        image_width: int,
-        max_string: int,
+        frame_count: int = env.FRAME_COUNT,
+        image_channels: int = env.IMAGE_CHANNELS,
+        image_height: int = env.IMAGE_HEIGHT,
+        image_width: int = env.IMAGE_WIDTH,
+        max_string: int = env.MAX_STRING,
         output_size: int = env.OUTPUT_SIZE,
     ):
         input_shape = self.get_input_shape(
@@ -86,7 +86,7 @@ class LipNet(object):
             outputs=self.loss_out,
         )
 
-    def compile_model(self, optimizer=None):
+    def compile(self, optimizer=None):
         if optimizer is None:
             optimizer = Adam(
                 learning_rate=ADAM_LEARN_RATE,

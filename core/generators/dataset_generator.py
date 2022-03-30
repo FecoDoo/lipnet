@@ -4,7 +4,6 @@ import random
 from typing import List, Tuple, Dict
 from core.generators.batch_generator import BatchGenerator
 from core.helpers.align import Align, align_from_file
-from pathlib import Path
 
 
 class DatasetGenerator(object):
@@ -47,9 +46,10 @@ class DatasetGenerator(object):
             val_aligns = self.generate_align_hash(val_videos)
 
             with open(cache_path, "wb") as f:
-                pickle.dump(obj=(train_videos, train_aligns, val_videos, val_aligns), file=f)
+                pickle.dump(
+                    obj=(train_videos, train_aligns, val_videos, val_aligns), file=f
+                )
 
-        
         print(
             "Found {} videos and {} aligns for training".format(
                 len(train_videos), len(train_aligns)
