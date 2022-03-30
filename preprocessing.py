@@ -4,12 +4,12 @@ import traceback
 import env
 from multiprocessing import Pool, log_to_stderr
 from pathlib import Path
-from utils.preprocessor import Extractor
+from utils.converter import Converter
 from tqdm import tqdm
 
 ROOT = Path(__file__).resolve().parents[0]
 DATA_TARGET_DIR = ROOT.joinpath("data/dataset")
-ERROR_DIR = ROOT.joinpath("logs/")
+ERROR_DIR = ROOT.joinpath("logs/preprocessing")
 
 if not DATA_TARGET_DIR.exists():
     DATA_TARGET_DIR.mkdir()
@@ -17,13 +17,17 @@ if not DATA_TARGET_DIR.exists():
 if not ERROR_DIR.exists():
     ERROR_DIR.mkdir()
 
-pattern = "*.mpg"
+pattern = env.VIDEO_PATTERN
 
 # define logger
 logger = log_to_stderr(level=logging.DEBUG)
 
 
-def convert(group_path: os.PathLike):
+def convert_video_to_array(group_path: os.PathLike):
+    """
+    convert features from *.mpg files and convert into *.npy format
+    """
+
     try:
         groupname = group_path.name
 
@@ -34,7 +38,7 @@ def convert(group_path: os.PathLike):
 
         logger.info(f"Start: {groupname}")
 
-        extractor = Extractor(logger)
+        converter = Converter(logger)
 
         for file_path in group_path.glob(pattern):
             hash_string = file_path.stem
@@ -44,7 +48,7 @@ def convert(group_path: os.PathLike):
                 logger.info(f"{groupname + ' | ' + hash_string} | skipped")
                 continue
 
-            if not extractor.video_to_frames(file_path, output_path):
+            if not converter.video_to_frames(file_path, output_path):
                 videos_failed.append(hash_string + "\n")
 
         with open(str(ERROR_DIR.joinpath(groupname + ".txt")), "w") as f:
@@ -53,24 +57,14 @@ def convert(group_path: os.PathLike):
     except Exception:
         logger.error(traceback.format_exc())
     finally:
-        logger.info(f"{group_path.name} completed.")
+        logger.info(f"{group_path.name} processing completed.")
 
 
 # @validate_preprocessing_config
 def manager():
     """
-    convert features from *.mpg files and convert into *.npy format
+    Multiprocessing manager
     """
-
-    logger.info(
-        r"""
-   __         __     ______   __   __     ______     __  __     ______  
-  /\ \       /\ \   /\  == \ /\ "-.\ \   /\  ___\   /\_\_\_\   /\__  _\ 
-  \ \ \____  \ \ \  \ \  _-/ \ \ \-.  \  \ \  __\   \/_/\_\/_  \/_/\ \/ 
-   \ \_____\  \ \_\  \ \_\    \ \_\\"\_\  \ \_____\   /\_\/\_\    \ \_\ 
-    \/_____/   \/_/   \/_/     \/_/ \/_/   \/_____/   \/_/\/_/     \/_/ 
-	"""
-    )
 
     try:
         data_source_dir = ROOT.joinpath("../dataset/lipnet/train/").resolve()
@@ -89,21 +83,18 @@ def manager():
                 logger.error(f"Group {i} is not a directory")
                 groups.remove(i)
                 continue
+                
+        with Pool(processes=None) as pool:
+            res = [
+                pool.apply_async(
+                    convert_video_to_array,
+                    args=(group_path,),
+                )
+                for group_path in groups
+            ]
 
-        if env.DEV:
-            convert(groups[0])
-        else:
-            with Pool(processes=None) as pool:
-                res = [
-                    pool.apply_async(
-                        convert,
-                        args=(group_path,),
-                    )
-                    for group_path in groups
-                ]
-
-                for p in res:
-                    p.get()
+            for p in res:
+                p.get()
 
     except Exception:
         logger.error(traceback.format_exc())

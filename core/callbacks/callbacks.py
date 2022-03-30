@@ -154,10 +154,33 @@ class ModelCheckpoint(ModelCheckpoint):
 
 
 class TensorBoard(TensorBoard):
-    def __init__(self, log_dir='logs', histogram_freq=0, write_graph=True, write_images=False, write_steps_per_second=False, update_freq='epoch', profile_batch=2, embeddings_freq=0, embeddings_metadata=None, **kwargs):
-        super().__init__(log_dir, histogram_freq, write_graph, write_images, write_steps_per_second, update_freq, profile_batch, embeddings_freq, embeddings_metadata, **kwargs)
+    def __init__(
+        self,
+        log_dir="logs",
+        histogram_freq=0,
+        write_graph=True,
+        write_images=False,
+        write_steps_per_second=False,
+        update_freq="epoch",
+        profile_batch=2,
+        embeddings_freq=0,
+        embeddings_metadata=None,
+        **kwargs
+    ):
+        super().__init__(
+            log_dir,
+            histogram_freq,
+            write_graph,
+            write_images,
+            write_steps_per_second,
+            update_freq,
+            profile_batch,
+            embeddings_freq,
+            embeddings_metadata,
+            **kwargs
+        )
 
 
 class CSVLogger(CSVLogger):
-    def __init__(self, filename, separator=',', append=False):
+    def __init__(self, filename, separator=",", append=False):
         super().__init__(filename, separator, append)
