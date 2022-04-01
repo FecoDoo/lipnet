@@ -58,4 +58,4 @@ class Decoder(object):
             top_paths=top_paths,
         )
 
-        return [path.eval(session=k.get_session()) for path in decoded[0]]
+        return decoded[0]
