@@ -4,6 +4,7 @@ from tensorflow.keras.optimizers import Adam
 
 import core.model.layers as layers
 import env
+import os
 
 
 ADAM_LEARN_RATE = 0.0001
@@ -96,13 +97,11 @@ class LipNet(object):
             )
 
         self.model.compile(
-            loss={"ctc": lambda y_true, y_pred: y_pred}, optimizer=optimizer
+            loss={"ctc": lambda inputs, outputs: outputs}, optimizer=optimizer
         )
-        return self
 
-    def load_weights(self, path: str):
+    def load_weights(self, path: os.PathLike):
         self.model.load_weights(path)
-        return self
 
     @staticmethod
     def get_input_shape(
@@ -114,8 +113,8 @@ class LipNet(object):
             return frame_count, image_width, image_height, image_channels
 
     def predict(self, input_batch):
-        return self.capture_softmax_output([input_batch, 0])[0]
+        return self.capture_softmax_output([input_batch])[0]
 
     @property
     def capture_softmax_output(self):
-        return k.function([self.input_layer, k.learning_phase()], [self.y_pred])
+        return k.function([self.input_layer], [self.y_pred])

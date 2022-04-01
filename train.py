@@ -58,9 +58,7 @@ def main():
 
     timestamp = datetime.utcnow().timestamp()
 
-    config = TrainingConfig(
-        dataset_path, aligns_path
-    )
+    config = TrainingConfig(dataset_path, aligns_path)
 
     train(timestamp, config)
 
@@ -90,7 +88,8 @@ def train(timestamp: float, config: TrainingConfig):
         config.image_height,
         config.image_width,
         config.max_string,
-    ).compile_model()
+    )
+    lipnet.compile()
 
     datagen = DatasetGenerator(
         config.dataset_path,
@@ -107,7 +106,7 @@ def train(timestamp: float, config: TrainingConfig):
 
     start_time = time.time()
 
-    lipnet.model.fit(
+    lipnet.fit(
         x=datagen.train_generator,
         validation_data=datagen.val_generator,
         epochs=config.epochs,

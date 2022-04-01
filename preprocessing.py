@@ -83,7 +83,7 @@ def manager():
                 logger.error(f"Group {i} is not a directory")
                 groups.remove(i)
                 continue
-                
+
         with Pool(processes=None) as pool:
             res = [
                 pool.apply_async(
