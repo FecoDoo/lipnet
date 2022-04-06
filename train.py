@@ -10,7 +10,7 @@ from core.generators.dataset_generator import DatasetGenerator
 from core.model.lipnet import LipNet
 import env
 
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = env.TF_CPP_MIN_LOG_LEVEL
 
 
 ROOT_PATH = Path(os.path.dirname(os.path.realpath(__file__))).resolve()

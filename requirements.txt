@@ -13,4 +13,5 @@ Keras-Preprocessing==1.1.2
 matplotlib==3.5.1
 opencv==4.5.5
 sk-video==1.1.10
-tensorflow-gpu==2.7.0
+tensorflow-gpu==2.7.1
+jiwer==2.3.0
