@@ -1,14 +1,15 @@
 from core.decoding.decoder import Decoder
 from core.decoding.spell import Spell
-from core.utils.labels import labels_to_text
+from core.utils.label import labels_to_text
+from core.utils.types import PathLike
+import env
 
-
-DECODER_GREEDY = True
-DECODER_BEAM_WIDTH = 200
+DECODER_GREEDY = env.DECODER_GREEDY
+DECODER_BEAM_WIDTH = env.DECODER_BEAM_WIDTH
 
 
 def create_decoder(
-    dict_path: str, greedy: bool = DECODER_GREEDY, width: int = DECODER_BEAM_WIDTH
+    dict_path: PathLike, greedy: bool = DECODER_GREEDY, width: int = DECODER_BEAM_WIDTH
 ):
     spell = Spell(dict_path)
     return Decoder(

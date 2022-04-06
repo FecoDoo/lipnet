@@ -1,101 +1,128 @@
-from datetime import timedelta
-import os
-import env
+import logging
 import cv2
 import numpy as np
-import skvideo.io
-import traceback
+from pathlib import Path
 from imutils import face_utils
-from typing import Optional, Tuple
 from dlib import get_frontal_face_detector, shape_predictor
+from core.utils.types import Stream, Optional, Frame
+import env
+
+ROOT = Path(__file__).parents[1].resolve()
+logger = logging.getLogger("converter")
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler())
 
 
-class Converter:
-    def __init__(self, logger):
-        self.logger = logger
-        self.frame_shape = (env.IMAGE_HEIGHT, env.IMAGE_WIDTH, env.IMAGE_CHANNELS)
-        self.image_size = (env.IMAGE_HEIGHT, env.IMAGE_WIDTH)
-        self.detector = get_frontal_face_detector()
-        self.predictor = shape_predictor(env.DLIB_SHAPE_PREDICTOR_PATH)
+frame_shape = (env.IMAGE_HEIGHT, env.IMAGE_WIDTH, env.IMAGE_CHANNELS)
+image_size = (env.IMAGE_HEIGHT, env.IMAGE_WIDTH)
+detector = get_frontal_face_detector()
+predictor = shape_predictor(str(ROOT.joinpath(env.DLIB_SHAPE_PREDICTOR_PATH)))
 
-        _, (self.mouth_x_idx, self.mouth_y_idx) = list(
-            face_utils.FACIAL_LANDMARKS_IDXS.items()
-        )[0]
+landmark_name, (mouth_x_idx, mouth_y_idx) = list(
+    face_utils.FACIAL_LANDMARKS_IDXS.items()
+)[0]
 
-    def video_to_frames(
-        self, video_path: os.PathLike, output_path: os.PathLike, verbose: bool = True
-    ) -> bool:
-        try:
-            video_name = " | ".join(str(video_path).split(".")[0].split("/")[-2:])
 
-            if verbose:
-                self.logger.info(video_name + " | processing")
+# passed if no ROI is found or the shape after cropping is wrong
+dummy_cropped_image = np.zeros(
+    shape=(env.IMAGE_HEIGHT, env.IMAGE_WIDTH, 3), dtype=np.uint8
+)
 
-            video_data = self.extract_video_data(video_path)
 
-            np.save(output_path, video_data, allow_pickle=False)
-            return True
-        except ValueError as e:
-            self.logger.error("{}: {}".format(video_name, str(e)))
-            return False
-        except Exception:
-            self.logger.error(traceback.format_exc())
-            return False
+def roi_of_all_frames(stream: Stream) -> Stream:
+    """Extract all roi from stream
 
-    def extract_video_data(self, video_path: os.PathLike) -> Optional[np.ndarray]:
+    Args:
+        stream (Stream): Stream
 
-        video_stream = skvideo.io.vread(str(video_path))
-        video_stream_length = len(video_stream)
+    Returns:
+        Stream: Stream
+    """
+    res = []
 
-        if video_stream_length != env.FRAME_COUNT:
-            raise ValueError("Invalid number of frames: {}".format(video_stream_length))
+    for idx, frame in enumerate(stream):
+        res.append(roi_of_each_frame(idx, frame))
 
-        mouth_data = list(map(self.extract_mouth_in_frame, enumerate(video_stream)))
+    return np.stack(res)
 
-        return np.array(mouth_data)
 
-    def extract_mouth_in_frame(
-        # self, frame: np.ndarray, idx: int
-        self,
-        var: Tuple[int, np.ndarray],
-    ) -> Optional[np.ndarray]:
-        m_points = self.extract_mouth_points(var[1])
+def roi_of_each_frame(idx: int, frame: Frame) -> Optional[Stream]:
+    """Crop each frame by extract ROI around subject's mouth
 
-        if m_points is None:
-            raise ValueError("No ROI found at frame {}".format(var[0]))
+    Args:
+        video_path (os.PathLike): path to the video file
 
-        m_center = self.get_mouth_points_center(m_points)
-        s_m_center = self.swap_center_axis(m_center)
-        crop = self.crop_image(var[1], s_m_center, self.image_size)
+    Returns:
+        Optional[np.ndarray]: cropped frames, return None if
+    """
+    m_points = extract_mouth_points(frame)
 
-        if crop.shape != self.frame_shape:
-            raise ValueError("Wrong shape {} at frame {}".format(crop.shape, var[0]))
+    if m_points is None:
+        logger.error("No ROI found at frame {}".format(idx))
+        return dummy_cropped_image
 
-        return crop
+    m_center = get_mouth_points_center(m_points)  # W x H
 
-    def extract_mouth_points(self, frame: np.ndarray) -> Optional[np.ndarray]:
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        detected = self.detector(gray, 1)
+    m_center = swap_center_axis(m_center)  # H x W
 
-        if len(detected) <= 0:
-            return None
+    crop = crop_image(frame, m_center, image_size)  # T x H x W x C
 
-        shape = face_utils.shape_to_np(self.predictor(gray, detected[0]))
+    if crop.shape != frame_shape:
+        logger.error("Wrong shape {} at frame {}".format(crop.shape, idx))
+        return dummy_cropped_image
 
-        return shape[self.mouth_x_idx : self.mouth_y_idx]
+    return crop
 
-    @staticmethod
-    def crop_image(image: np.ndarray, center: tuple, size: tuple) -> np.ndarray:
-        start = tuple(a - b // 2 for a, b in zip(center, size))
-        end = tuple(a + b for a, b in zip(start, size))
-        slices = tuple(slice(a, b) for a, b in zip(start, end))
 
-        return image[slices]
+def extract_mouth_points(stream: Stream) -> Optional[Stream]:
+    """Extract mouth landmarks
 
-    @staticmethod
-    def swap_center_axis(array: np.ndarray) -> tuple:
-        return array[1], array[0]
+    Args:
+        stream (Stream): Stream
 
-    @staticmethod
-    def get_mouth_points_center(mouth_points: np.ndarray) -> np.ndarray:
-        return np.mean(mouth_points, axis=0, dtype=int)
+    Returns:
+        Optional[Stream]: Stream or None
+    """
+    gray = cv2.cvtColor(stream, cv2.COLOR_BGR2GRAY)
+    detected = detector(gray, 1)
+
+    if len(detected) <= 0:
+        return None
+
+    shape = face_utils.shape_to_np(predictor(gray, detected[0]))
+
+    return shape[mouth_x_idx:mouth_y_idx]
+
+
+def crop_image(image: Frame, center: tuple, size: tuple) -> Frame:
+    """Crop frame accroding to roi
+
+    Args:
+        image (np.ndarray): one frame
+        center (tuple): center of roi
+        size (tuple): size of roi
+
+    Returns:
+        Frame: roi frame after cropping
+    """
+    start = tuple(a - b // 2 for a, b in zip(center, size))
+    end = tuple(a + b for a, b in zip(start, size))
+    slices = tuple(slice(a, b) for a, b in zip(start, end))
+
+    return image[slices]
+
+
+def swap_center_axis(center: np.ndarray) -> tuple:
+    """swap center axis, from W x H to H x W
+
+    Args:
+        center (np.ndarray): [W, H]
+
+    Returns:
+        tuple: (H, W)
+    """
+    return center[1], center[0]
+
+
+def get_mouth_points_center(mouth_points: np.ndarray) -> np.ndarray:
+    return np.mean(mouth_points, axis=0, dtype=np.int16)

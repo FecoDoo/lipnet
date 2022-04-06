@@ -17,12 +17,15 @@ STD_R = 0.1629
 STD_G = 0.1205
 STD_B = 0.1257
 
+# decoder
+DECODER_GREEDY = True
+DECODER_BEAM_WIDTH = 200
+
 # preprocessing & training
-DEV = 0
-USE_CACHE = 1
+USE_CACHE = True
 EPOCH = 60
 
-VIDEO_PATTERN = "*.mpg"
+VIDEO_SUFFIX = ".mpg"
 
 # prediction
 DICTIONARY_PATH = "data/dictionaries/grid.txt"
