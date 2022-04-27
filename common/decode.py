@@ -1,11 +1,12 @@
+import os
 from core.decoding.decoder import Decoder
 from core.decoding.spell import Spell
 from core.utils.label import labels_to_text
 from core.utils.types import PathLike
-import env
 
-DECODER_GREEDY = env.DECODER_GREEDY
-DECODER_BEAM_WIDTH = env.DECODER_BEAM_WIDTH
+
+DECODER_GREEDY = bool(os.environ["DECODER_GREEDY"])
+DECODER_BEAM_WIDTH = int(os.environ["DECODER_BEAM_WIDTH"])
 
 
 def create_decoder(

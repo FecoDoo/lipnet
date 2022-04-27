@@ -1,9 +1,9 @@
 import os
 import pickle
 import random
-from typing import List, Tuple, Dict
+from core.utils.types import List, Tuple, Dict
 from core.generators.batch_generator import BatchGenerator
-from core.helpers.align import Align, align_from_file
+from core.utils.align import Align, align_from_file
 
 
 class DatasetGenerator(object):
@@ -32,12 +32,12 @@ class DatasetGenerator(object):
         cache_path = self.dataset_path.joinpath(".cache")
 
         if self.use_cache and cache_path.is_file():
-            print("\nLoading dataset list from cache...\n")
+            print("Loading dataset list from cache...")
 
             with open(cache_path, "rb") as f:
                 train_videos, train_aligns, val_videos, val_aligns = pickle.load(f)
         else:
-            print("\nEnumerating dataset list from disk...\n")
+            print("Enumerating dataset list from disk...")
 
             groups = self.generate_video_list_by_groups_with_shuffle(self.dataset_path)
             train_videos, val_videos = self.split_speaker_groups(groups, self.val_split)
@@ -88,6 +88,15 @@ class DatasetGenerator(object):
 
     @staticmethod
     def split_speaker_groups(groups: list, val_split: float) -> Tuple[list, list]:
+        """Split video recordings of each group into training set and validation set.
+
+        Args:
+            groups (list): List of group names
+            val_split (float): size of validation set (%)
+
+        Returns:
+            Tuple[list, list]: A tuple consists of training set and validation set (paths)
+        """
         train_list = []
         val_list = []
 

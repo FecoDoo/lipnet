@@ -1,15 +1,18 @@
 import numpy as np
-import env
 import os
 from tensorflow.keras.utils import Sequence
-from core.helpers.video import get_video_data_from_file
-from typing import List, Tuple
+from core.utils.video import video_read
+from core.utils.types import List, Tuple
 
 
 class BatchGenerator(Sequence):
 
-    __video_mean = np.array([env.MEAN_R, env.MEAN_G, env.MEAN_B])
-    __video_std = np.array([env.STD_R, env.STD_G, env.STD_B])
+    __video_mean = np.array(
+        [os.environ.get("MEAN_R"), os.environ.get("MEAN_G"), os.environ.get("MEAN_B")]
+    )
+    __video_std = np.array(
+        [os.environ.get("STD_R"), os.environ.get("STD_G"), os.environ.get("STD_B")]
+    )
 
     def __init__(
         self, video_paths: List[os.PathLike], align_hash: dict, batch_size: int
@@ -96,7 +99,7 @@ class BatchGenerator(Sequence):
     def get_data_from_path(self, path: str) -> Tuple[np.ndarray, str, np.ndarray, int]:
         align = self.align_hash[path.stem]
         return (
-            get_video_data_from_file(path),
+            video_read(path),
             align.sentence,
             align.labels,
             align.length,

@@ -1,28 +1,26 @@
 import os
 import csv
-import numpy as np
-import skvideo.io
-from typing import List
-from core.helpers.video import (
-    get_video_data_from_file,
-    reshape_and_normalize_video_data,
-)
 from core.utils.visualization import visualize_video_subtitle
+from core.utils.video import video_read
+from typing import List
 
 
 def display_results(
-    valid_paths: list, results: list, display: bool = True, visualize: bool = False
+    valid_paths: List[os.PathLike],
+    results: list,
+    display: bool = True,
+    visualize: bool = False,
 ):
     if not display and not bool:
         return
 
-    for p, r in zip(valid_paths, results):
+    for video_path, r in zip(valid_paths, results):
         if display:
-            print("\nVideo: {}\n    Result: {}".format(p, r))
+            print("Video: {}\nResult: {}".format(video_path, r))
 
         if visualize:
-            v = get_entire_video_data(p)
-            visualize_video_subtitle(v, r)
+            stream = video_read(video_path, complete=True)
+            visualize_video_subtitle(stream, r)
 
 
 def query_save_csv_path(default: str = "output.csv"):
@@ -54,10 +52,3 @@ def write_results_to_csv(path: os.PathLike, valid_paths: list, results: list):
 
         for p, r in zip(valid_paths, results):
             writer.writerow([p, r])
-
-
-def get_entire_video_data(path: os.PathLike) -> np.ndarray:
-    if path.suffix == ".mpg":
-        return np.swapaxes(skvideo.io.vread(path), 1, 2)
-    else:
-        return get_video_data_from_file(path)
