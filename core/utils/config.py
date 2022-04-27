@@ -12,3 +12,11 @@ class LipNetConfig:
     image_width: int = (100,)
     max_string: int = (32,)
     output_size: int = (28,)
+
+@dataclass
+class BaselineConifg:
+    model_weight_path: PathLike
+    image_path: PathLike
+    image_channels: int = (3,)
+    image_height: int = (244,)
+    image_width: int = (244,)
