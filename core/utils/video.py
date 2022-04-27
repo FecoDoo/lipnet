@@ -27,14 +27,14 @@ def video_read(
         This may be risky when loading large video file which may leads to running out of memory
 
     Returns:
-        Optional[Stream]: video stream, in the format of (T x H x W x C)
+        Optional[Stream]: video stream, in the format of (T x W x H x C)
     """
     if complete:
         stream = vread(video_path)
     else:
         stream = vread(video_path, num_frames=num_frames)
 
-    return stream
+    return video_reshape(stream)
 
 
 def video_read_from_npy(video_path: os.PathLike) -> Stream:
@@ -54,10 +54,10 @@ def video_read_from_npy(video_path: os.PathLike) -> Stream:
     if stream.size <= 0:
         raise ValueError(f"video {video_path} is empty")
 
-    return reshape_and_normalize(stream)
+    return video_normalize(stream)
 
 
-def reshape_and_normalize(stream: Stream) -> Stream:
+def video_normalize(stream: Stream) -> Stream:
     """Apply preprocessing on stream
 
     Args:
@@ -66,10 +66,10 @@ def reshape_and_normalize(stream: Stream) -> Stream:
     Returns:
         Stream: Stream
     """
-    return normalize(reshape(stream))
+    return stream.astype(np.float32) / 255.0
 
 
-def reshape(stream: Stream) -> Stream:
+def video_reshape(stream: Stream) -> Stream:
     """Move stream axes according to keras backend configuration
 
     Args:
@@ -78,21 +78,4 @@ def reshape(stream: Stream) -> Stream:
     Returns:
         Stream: Stream
     """
-    reshaped_stream = np.swapaxes(stream, 1, 2)  # T x W x H x C
-
-    if k.image_data_format() == "channels_first":
-        reshaped_stream = np.moveaxis(reshaped_stream, 3, 0)  # C x T x W x H
-
-    return reshaped_stream
-
-
-def normalize(stream: Stream) -> Stream:
-    """Normalizing stream into unit range
-
-    Args:
-        stream (Stream): video stream
-
-    Returns:
-        Stream: video stream
-    """
-    return stream.astype(np.float32) / 255.0
+    return np.swapaxes(stream, 1, 2)  # T x W x H x C

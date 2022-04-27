@@ -3,7 +3,6 @@ from dataclasses import dataclass
 import numpy as np
 from core.utils.label import text_to_labels
 from core.utils.types import Labels
-import env
 
 __SILENCE_TOKENS = ["sp", "sil"]
 
@@ -70,7 +69,7 @@ def __get_sentence_labels(sentence: str) -> Labels:
     return text_to_labels(sentence)
 
 
-def __get_padded_label(labels: Labels, max_string: int = env.MAX_STRING) -> Labels:
+def __get_padded_label(labels: Labels, max_string: int = 12) -> Labels:
     """Pad list of labels with -1 until the length reaches max_string
 
     Args:
