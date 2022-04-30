@@ -4,6 +4,7 @@ from typing import List
 from pathlib import Path
 
 from dotenv import load_dotenv
+
 load_dotenv(".env")
 
 from common.decode import create_decoder
@@ -47,8 +48,6 @@ def main():
 
     # define params
     lipnet_config = LipNetConfig(
-        lipnet_weight_path,
-        video_path,
         int(os.environ["FRAME_COUNT"]),
         int(os.environ["IMAGE_WIDTH"]),
         int(os.environ["IMAGE_HEIGHT"]),
@@ -62,9 +61,7 @@ def predict(lipnet_config: LipNetConfig):
     logger.info("Loading weights at: {}".format(lipnet_config.model_weight_path))
     logger.info("Making predictions...")
 
-    lipnet = LipNet(
-        lipnet_config
-    )
+    lipnet = LipNet(lipnet_config)
     lipnet.compile()
     lipnet.load_weights(lipnet_config.model_weight_path)
 

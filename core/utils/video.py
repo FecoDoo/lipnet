@@ -1,8 +1,10 @@
 import os
+import cv2
 import numpy as np
 from skvideo.io import vread
 from tensorflow.keras import backend as k
 from core.utils.types import Stream, Optional
+from core.utils.config import LipNetConfig, DenseNetConfig
 
 
 def video_to_numpy(stream: Stream, output_path: os.PathLike) -> None:
@@ -34,7 +36,7 @@ def video_read(
     else:
         stream = vread(video_path, num_frames=num_frames)
 
-    return video_reshape(stream)
+    return video_swap_width_height(stream)
 
 
 def video_read_from_npy(video_path: os.PathLike) -> Stream:
@@ -69,7 +71,7 @@ def video_normalize(stream: Stream) -> Stream:
     return stream.astype(np.float32) / 255.0
 
 
-def video_reshape(stream: Stream) -> Stream:
+def video_swap_width_height(stream: Stream) -> Stream:
     """Move stream axes according to keras backend configuration
 
     Args:
@@ -79,3 +81,29 @@ def video_reshape(stream: Stream) -> Stream:
         Stream: Stream
     """
     return np.swapaxes(stream, 1, 2)  # T x W x H x C
+
+
+def preprocess_input(stream: Stream, model: str = "lipnet") -> Stream:
+    """preprocess input video sequence according to selected models
+
+    Args:
+        stream (Stream): video sequence
+        model (Str, optional): model type. Defaults to "lipnet".
+
+    Returns:
+        Stream: video sequence
+    """
+
+    if model == "lipnet":
+        config = LipNetConfig()
+    elif model == "densenet":
+        config = DenseNetConfig()
+    else:
+        raise TypeError("model should be either lipnet or densenet")
+
+    frame_shape = (config.image_width, config.image_height, config.image_channels)
+
+    return np.array(
+        [cv2.resize(frame, (frame_shape[1], frame_shape[0])) for frame in stream],
+        dtype=np.int32,
+    )

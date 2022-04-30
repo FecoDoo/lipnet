@@ -11,7 +11,7 @@ assert load_dotenv(".env")
 # define paths
 ROOT = Path(__file__).joinpath("../").resolve()
 DENSENET_WEIGHT_PATH = ROOT.joinpath(os.environ["DENSENET_WEIGHT_PATH"])
-IMAGE_PATH = ROOT.joinpath("data/expw/faces/")
+IMAGE_PATH = ROOT.joinpath("data/expw/face/")
 
 # define logger
 logger = get_logger("baseline")
@@ -47,9 +47,9 @@ def main():
     model.load_weights(DENSENET_WEIGHT_PATH)
 
     dataset = generate_dataset(IMAGE_PATH)
-    
+
     sample = dataset.take(1)
-    
+
     y_pred = model.predict(sample)
 
     # print(label)
