@@ -168,9 +168,14 @@ data/*
 
 misc/
 logs/
-models/
 custom/
 utils/predictors/
 videos/
 images/
+test/
 .cache
+
+models/
+!core/models
+
+script/testing/
