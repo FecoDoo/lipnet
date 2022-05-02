@@ -12,8 +12,19 @@ class LipNetConfig:
 
 
 @dataclass(repr=True)
-class DenseNetConfig:
+class BaselineConfig:
     batch_size: int = 75
     image_channels: int = 3
     image_height: int = 244
     image_width: int = 244
+
+
+emotion = {
+    "angry": 0,
+    "disgust": 1,
+    "fear": 2,
+    "happy": 3,
+    "sad": 4,
+    "surprise": 5,
+    "neutral": 6
+}

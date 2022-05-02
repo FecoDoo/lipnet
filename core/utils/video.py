@@ -4,7 +4,7 @@ import numpy as np
 from skvideo.io import vread
 from tensorflow.keras import backend as k
 from core.utils.types import Stream, Optional
-from core.utils.config import LipNetConfig, DenseNetConfig
+from core.utils.config import LipNetConfig, BaselineConfig
 
 
 def video_to_numpy(stream: Stream, output_path: os.PathLike) -> None:
@@ -29,14 +29,14 @@ def video_read(
         This may be risky when loading large video file which may leads to running out of memory
 
     Returns:
-        Optional[Stream]: video stream, in the format of (T x W x H x C)
+        Optional[Stream]: video stream, in the format of (T x H x W x C)
     """
     if complete:
         stream = vread(video_path)
     else:
         stream = vread(video_path, num_frames=num_frames)
 
-    return video_swap_width_height(stream)
+    return stream
 
 
 def video_read_from_npy(video_path: os.PathLike) -> Stream:
@@ -56,7 +56,7 @@ def video_read_from_npy(video_path: os.PathLike) -> Stream:
     if stream.size <= 0:
         raise ValueError(f"video {video_path} is empty")
 
-    return video_normalize(stream)
+    return stream
 
 
 def video_normalize(stream: Stream) -> Stream:
@@ -83,7 +83,7 @@ def video_swap_width_height(stream: Stream) -> Stream:
     return np.swapaxes(stream, 1, 2)  # T x W x H x C
 
 
-def preprocess_input(stream: Stream, model: str = "lipnet") -> Stream:
+def video_transform(stream: Stream, model: str = "lipnet") -> Stream:
     """preprocess input video sequence according to selected models
 
     Args:
@@ -96,14 +96,14 @@ def preprocess_input(stream: Stream, model: str = "lipnet") -> Stream:
 
     if model == "lipnet":
         config = LipNetConfig()
-    elif model == "densenet":
-        config = DenseNetConfig()
+    elif model == "baseline":
+        config = BaselineConfig()
     else:
-        raise TypeError("model should be either lipnet or densenet")
+        raise TypeError("model should be either lipnet or baseline")
 
-    frame_shape = (config.image_width, config.image_height, config.image_channels)
+    frame_shape = (config.image_height, config.image_width, config.image_channels)
 
-    return np.array(
-        [cv2.resize(frame, (frame_shape[1], frame_shape[0])) for frame in stream],
-        dtype=np.int32,
-    )
+    return video_normalize(np.array(
+        [cv2.resize(frame, (frame_shape[0], frame_shape[1])) for frame in stream],
+        dtype=np.float32,
+    ))
