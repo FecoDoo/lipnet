@@ -6,7 +6,7 @@ from tensorflow.keras.callbacks import Callback, CSVLogger, ModelCheckpoint, Ten
 from tensorflow.keras.utils import Sequence
 from core.decoding.decoder import Decoder
 from core.models.lipnet import LipNet
-from typing import List, Tuple
+from core.utils.types import List, Tuple, Callable
 from jiwer import (
     wer,
     Compose,
@@ -70,7 +70,7 @@ class ErrorRates(Callback):
         return sample_batch
 
     def calculate_mean_generic(
-        self, data: List[tuple], mean_length: int, evaluator: callable
+        self, data: List[tuple], mean_length: int, evaluator: Callable
     ) -> Tuple[float, float]:
         values = np.array(
             [

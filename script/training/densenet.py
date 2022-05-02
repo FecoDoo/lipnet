@@ -3,14 +3,15 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Tuple
 
 root = Path(__file__).parents[2].resolve()
 sys.path.insert(0, str(root))
 
-from core.utils.config import DenseNetConfig, emotion
+from core.utils.config import BaselineConfig, emotion
 from core.utils.types import PathLike, Optional
 
-from tensorflow import dtypes, one_hot, io, image, cast, data, strings
+from tensorflow import dtypes, one_hot, io, image, data
 from tensorflow.keras.applications.densenet import DenseNet121
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import (
@@ -27,11 +28,11 @@ from tensorflow.keras.callbacks import (
 from tensorflow.keras.losses import categorical_crossentropy
 
 
-timestamp = datetime.utcnow().strftime("%Y-%m-%d-%H%M")
+training_timestamp = datetime.utcnow().strftime("%Y-%m-%d-%H%M")
 
-data_dir = root.joinpath("data/expw")
-log_dir = root.joinpath("logs/baseline/training", timestamp)
-model_save_dir = root.joinpath("models/baseline", timestamp)
+data_dir = root.joinpath("data/fer")
+log_dir = root.joinpath(os.path.join("logs/baseline/training", training_timestamp))
+model_save_dir = root.joinpath(os.path.join("models/baseline", training_timestamp))
 
 assert data_dir.exists()
 log_dir.mkdir(mode=750, exist_ok=True)
@@ -39,40 +40,62 @@ model_save_dir.mkdir(mode=750, exist_ok=True)
 
 # training params
 batch_size = 8
-learning_rate = 1e-3  # 设置学习率为1e-4
+learning_rate = 1e-3  # 设置学习率为1e-3
 epochs = 40  # 训练轮数
 
-densenet_config = DenseNetConfig()
+# model params
+densenet_config = BaselineConfig()
 
 frame_shape = (
-    densenet_config.image_width,
     densenet_config.image_height,
+    densenet_config.image_width,
     densenet_config.image_channels,
 )
 
 
-def generate_tf_dataset(path):
+def process_image(path):
+    """generate tensorflow.data.Dataset from images
 
-    label = strings.to_number(
-        strings.split(strings.split(strings.split(path, os.sep)[-1], ".")[0], "_")[0],
-        out_type=dtypes.int32,
+    Args:
+        path (Tensor): Tensor object from tensorflow.data.Dataset
+
+    Returns:
+        img: tensorflow image object
+    """
+    # load image
+    img = io.read_file(path)
+    img = io.decode_jpeg(img, channels=3)
+    img = image.convert_image_dtype(img, dtypes.float32)
+    img = image.resize(img, frame_shape[:2])
+    img = img / 255.0
+
+    return img
+
+
+def generate_tf_dataset(path: os.PathLike):
+
+    image_list = list(path.rglob("*.jpg"))
+    label_list = [emotion[path.parent.name] for path in image_list]
+
+    # image
+    image_dataset = data.Dataset.from_tensor_slices(
+        [str(path) for path in image_list]
+    ).map(process_image)
+    
+    # label
+    label_dataset = data.Dataset.from_tensor_slices(label_list).map(
+        lambda x: one_hot(indices=x, depth=7, dtype=dtypes.uint8)
     )
 
-    label = one_hot(indices=label, depth=7, dtype=dtypes.int32)
-
-    img = io.read_file(path)
-    img = io.decode_jpeg(img)
-    img = image.convert_image_dtype(img, dtypes.float32)
-    # img = image.pad_to_bounding_box(
-    #     img, 0, 0, target_height, target_width
-    # )
-
-    img = image.resize(img, frame_shape[:2])
-
-    return img, label
+    return data.Dataset.zip((image_dataset, label_dataset))
 
 
-def generate_callbacks():
+def generate_callbacks() -> list:
+    """generate tensorflow callback functions
+
+    Returns:
+        list: list of tensorflow callback instance
+    """
     # set learning rate reducing policy
     reduce_learning_rate = ReduceLROnPlateau(
         monitor="val_loss", factor=0.1, patience=2, verbose=0
@@ -102,6 +125,11 @@ def generate_callbacks():
 
 
 def load_densenet():
+    """load pre-trained densenet121 and set learnable layers
+
+    Returns:
+        densenet: DenseNet121 instance
+    """
     densenet = DenseNet121(
         weights="imagenet", include_top=False, input_shape=frame_shape, pooling="avg"
     )
@@ -115,6 +143,14 @@ def load_densenet():
 
 
 def customize_layers(baseline_model):
+    """add layers to baseline model
+
+    Args:
+        baseline_model (DenseNet121): baseline model instance
+
+    Returns:
+        layer: last layer of the new model
+    """
     layer = Dense(256, activation="relu")(baseline_model.output)
     layer = Dropout(0.7)(layer)
     layer = Dense(128, activation="relu")(layer)
@@ -127,20 +163,23 @@ def customize_layers(baseline_model):
 
 
 def start_training(weights: Optional[PathLike]):
+    """main training loop
 
-    dataset = data.Dataset.list_files(str(data_dir.joinpath("face/*.jpg"))).map(
-        generate_tf_dataset
-    )
+    Args:
+        weights (Optional[PathLike]): baseline model weight filepath
+    """
 
-    batched_dataset = (
-        dataset.shuffle(buffer_size=1600)
+    # generate dataset and preprocessing
+
+    train_dataset = (
+        generate_tf_dataset(data_dir.joinpath("train"))
+        .shuffle(buffer_size=1600)
         .batch(batch_size=batch_size, drop_remainder=False)
         .prefetch(buffer_size=2)
     )
-
-    # Prepare the validation dataset
-    val_dataset = (
-        dataset.shuffle(buffer_size=1600)
+    test_dataset = (
+        generate_tf_dataset(data_dir.joinpath("test"))
+        .shuffle(buffer_size=1600)
         .batch(batch_size=batch_size, drop_remainder=False)
         .prefetch(buffer_size=2)
     )
@@ -163,10 +202,10 @@ def start_training(weights: Optional[PathLike]):
     callbacks = generate_callbacks()
 
     history = model.fit(
-        x=batched_dataset,
+        x=train_dataset,
         epochs=epochs,
         callbacks=callbacks,
-        validation_data=val_dataset,
+        validation_data=test_dataset,
     )
 
 

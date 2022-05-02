@@ -12,7 +12,7 @@ DECODER_BEAM_WIDTH = int(os.environ["DECODER_BEAM_WIDTH"])
 def create_decoder(
     dict_path: PathLike, greedy: bool = DECODER_GREEDY, width: int = DECODER_BEAM_WIDTH
 ):
-    spell = Spell(dict_path)
+    spell = Spell(str(dict_path))
     return Decoder(
         greedy=greedy, beam_width=width, postprocessors=[labels_to_text, spell.sentence]
     )

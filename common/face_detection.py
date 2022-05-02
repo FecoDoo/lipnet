@@ -6,12 +6,12 @@ mp_face_detection = mp.solutions.face_detection
 mp_drawing = mp.solutions.drawing_utils
 
 
-def get_face_box(n_col: int, n_row: int, location) -> Tuple[int]:
+def get_face_box(n_row: int, n_col: int, location) -> Tuple[int]:
     """generate bounding box positions for detected face
 
     Args:
-        n_col (int): frame width
         n_row (int): frame height
+        n_col (int): frame width
         location (_type_): mediapipe location object
 
     Returns:
@@ -34,12 +34,12 @@ def get_face_box(n_col: int, n_row: int, location) -> Tuple[int]:
     return rect_start_point + rect_end_point
 
 
-def get_lip_box(n_col: int, n_row: int, mouth_keypoint, nose_keypoint) -> Tuple[int]:
+def get_lip_box(n_row: int, n_col: int, mouth_keypoint, nose_keypoint) -> Tuple[int]:
     """generate bounding box positions for detected lip
 
     Args:
-        n_col (int): frame width
         n_row (int): frame height
+        n_col (int): frame width
         mouth_keypoint: relative position of mouth center point
         nose_keypoint: relative position of nose tip point
 
@@ -78,7 +78,7 @@ def process(frame: Frame, detection):
 
     # get face box
     face_box = get_face_box(
-        n_col=frame.shape[0], n_row=frame.shape[1], location=location
+        n_row=frame.shape[0], n_col=frame.shape[1], location=location
     )
 
     # to-do: return lip cropping
@@ -94,8 +94,8 @@ def process(frame: Frame, detection):
     )
 
     lip_box = get_lip_box(
-        n_col=frame.shape[0],
-        n_row=frame.shape[1],
+        n_row=frame.shape[0],
+        n_col=frame.shape[1],
         mouth_keypoint=mouth_keypoint,
         nose_keypoint=nose_keypoint,
     )
@@ -108,11 +108,11 @@ def crop(frame: Frame, box: Tuple[int]) -> Frame:
     """crop frame according to given box
 
     Args:
-        frame (Frame): Frame, W x H x C
+        frame (Frame): Frame, H x W x C
         box (Tuple[int]): box
 
     Returns:
-        Frame: Frame, W x H x C
+        Frame: Frame, H x W x C
     """
 
     return frame[box[1] : box[3], box[0] : box[2]]
@@ -126,6 +126,9 @@ def recognition(frame: Frame) -> Frame:
         model_selection=0, min_detection_confidence=0.8
     ) as face_detection:
         results = face_detection.process(frame)
+
+        if results.detections is None:
+            return None
 
         for detection in results.detections:
             box = process(frame, detection)
