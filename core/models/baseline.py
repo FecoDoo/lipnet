@@ -99,6 +99,10 @@ class DenseNet(object):
         return self.model.output
 
     @property
+    def layers(self):
+        return self.model.layers
+
+    @property
     def pre_softmax_layer(self):
         return self.densenet_custom_dropout_2
     
@@ -108,8 +112,9 @@ class DenseNet(object):
             inputs=[self.input], outputs=[self.densenet_custom_dropout_2]
         )
 
-    def get_pre_softmax_layer(self, input_batch):
+    def get_pre_softmax_layer_output(self, input_batch):
         return self.pre_softmax_layer_output([input_batch])[0]
+
 
     def predict(self, input_batch: Stream):
 

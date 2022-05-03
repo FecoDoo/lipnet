@@ -37,7 +37,7 @@ GRU_KERNEL_INIT = "Orthogonal"
 GRU_MERGE_MODE = "concat"
 
 
-def create_input_layer(name: str, shape, dtype: str = INPUT_TYPE) -> Input:
+def create_input_layer(name: str, shape, dtype: str = INPUT_TYPE):
     return Input(shape=shape, dtype=dtype, name=name)
 
 
@@ -51,8 +51,8 @@ def create_conv_layer(
     name: str, input_layer, filters: int, kernel_size: tuple = CONV_KERNEL_SIZE
 ) -> Conv3D:
     return Conv3D(
-        filters,
-        kernel_size,
+        filters=filters,
+        kernel_size=kernel_size,
         strides=CONV_STRIDES,
         kernel_initializer=CONV_KERNEL_INIT,
         name=name,
@@ -61,6 +61,12 @@ def create_conv_layer(
 
 def create_batc_layer(name: str, input_layer) -> BatchNormalization:
     return BatchNormalization(name=name)(input_layer)
+
+
+def create_softmax_layer(
+    name: str, input_layer, activation: str = "softmax", units=7
+) -> Dense:
+    return Dense(units=units, activation=activation, name=name)(input_layer)
 
 
 def create_actv_layer(
@@ -75,8 +81,8 @@ def create_pool_layer(name: str, input_layer) -> MaxPooling3D:
     )
 
 
-def create_drop_layer(name: str, input_layer, drop_rate=0) -> SpatialDropout3D:
-    return Dropout(rate=drop_rate, name=name)(input_layer)
+def create_drop_layer(name: str, input_layer, rate=0) -> SpatialDropout3D:
+    return Dropout(rate=rate, name=name)(input_layer)
 
 
 def create_spatial_drop_layer(name: str, input_layer) -> SpatialDropout3D:
@@ -98,8 +104,8 @@ def create_bi_gru_layer(
     )(input_layer)
 
 
-def create_timed_layer(input_layer) -> TimeDistributed:
-    return TimeDistributed(Flatten())(input_layer)
+def create_timed_layer(name: str, input_layer, target_layer=Flatten()) -> TimeDistributed:
+    return TimeDistributed(layer=target_layer, name=name)(input_layer)
 
 
 def create_dense_layer(
@@ -128,6 +134,6 @@ def create_ctc_layer(
 
 
 def create_concatenate_layer(
-    input_layers: List[Input], name: str = "concatenate_layer", axis: int = -1, 
+    input_layers: list, name: str, axis: int = -1, 
 ):
     return Concatenate(name=name, axis=axis)(input_layers)
