@@ -1,7 +1,7 @@
 import os
 import cv2
 import numpy as np
-from skvideo.io import vread
+from skvideo.io import vread, ffprobe
 from tensorflow.keras import backend as k
 from core.utils.types import Stream, Optional
 from core.utils.config import LipNetConfig, BaselineConfig
@@ -32,9 +32,16 @@ def video_read(
         Optional[Stream]: video stream, in the format of (T x H x W x C)
     """
     if complete:
-        stream = vread(video_path)
+        metadata = ffprobe(video_path)
+
+        num_frames = metadata.get("video").get("@nb_frames")
+
+        if num_frames is None:
+            raise TypeError("unable to read video metadata")
+
+        stream = vread(fname=video_path, num_frames=int(num_frames) - 1)
     else:
-        stream = vread(video_path, num_frames=num_frames)
+        stream = vread(fname=video_path, num_frames=num_frames)
 
     return stream
 
@@ -103,7 +110,7 @@ def video_transform(stream: Stream, model: str = "lipnet") -> Stream:
 
     frame_shape = (config.image_height, config.image_width, config.image_channels)
 
-    return video_normalize(np.array(
+    return np.array(
         [cv2.resize(frame, (frame_shape[0], frame_shape[1])) for frame in stream],
-        dtype=np.float32,
-    ))
+        dtype=np.uint8,
+    )
