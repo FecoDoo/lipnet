@@ -1,12 +1,28 @@
+from multiprocessing.sharedctypes import Value
 import os
 import cv2
+import warnings
 import numpy as np
+import random
+from pathlib import Path
+from functools import wraps
 from skvideo.io import vread, ffprobe
-from tensorflow.keras import backend as k
 from core.utils.types import Stream, Optional
 from core.utils.config import LipNetConfig, BaselineConfig
 
 
+def video_input_validation(func):
+    @wraps(func)
+    def wrapper(stream: Stream, *args, **kwargs):
+        if not isinstance(stream, np.ndarray):
+            raise ValueError(f"{func.__name__}: input must be numpy array")
+
+        return func(stream=stream, *args, **kwargs)
+
+    return wrapper
+
+
+@video_input_validation
 def video_to_numpy(stream: Stream, output_path: os.PathLike) -> None:
     """Save video stream into npy
 
@@ -31,13 +47,29 @@ def video_read(
     Returns:
         Optional[Stream]: video stream, in the format of (T x H x W x C)
     """
+    if not isinstance(video_path, os.PathLike):
+        video_path = Path(video_path)
+
+    if not video_path.is_file():
+        raise ValueError(f"{video_path} does not exist")
+
     if complete:
         metadata = ffprobe(video_path)
+
+        if metadata is None:
+            raise ValueError(f"could not read metadata from {video_path}")
 
         num_frames = metadata.get("video").get("@nb_frames")
 
         if num_frames is None:
-            raise TypeError("unable to read video metadata")
+            raise TypeError(f"metadata corrupted for {video_path}")
+
+        num_frames = int(num_frames)
+
+        if num_frames > 1000:
+            warnings.warn(
+                f"video {video_path} contains more than 1000 frames, which might lead to OOM error"
+            )
 
         stream = vread(fname=video_path, num_frames=int(num_frames) - 1)
     else:
@@ -66,6 +98,7 @@ def video_read_from_npy(video_path: os.PathLike) -> Stream:
     return stream
 
 
+@video_input_validation
 def video_normalize(stream: Stream) -> Stream:
     """Apply preprocessing on stream
 
@@ -78,6 +111,7 @@ def video_normalize(stream: Stream) -> Stream:
     return stream.astype(np.float32) / 255.0
 
 
+@video_input_validation
 def video_swap_width_height(stream: Stream) -> Stream:
     """Move stream axes according to keras backend configuration
 
@@ -90,6 +124,7 @@ def video_swap_width_height(stream: Stream) -> Stream:
     return np.swapaxes(stream, 1, 2)  # T x W x H x C
 
 
+@video_input_validation
 def video_transform(stream: Stream, model: str = "lipnet") -> Stream:
     """preprocess input video sequence according to selected models
 
@@ -114,3 +149,25 @@ def video_transform(stream: Stream, model: str = "lipnet") -> Stream:
         [cv2.resize(frame, (frame_shape[0], frame_shape[1])) for frame in stream],
         dtype=np.uint8,
     )
+
+
+@video_input_validation
+def video_sample_frames(stream: Stream, num_frames: int = 75) -> Stream:
+    """Sample new stream of size num_frames from original stream
+
+    Args:
+        stream (Stream): input stream
+        num_frames (int, optional): desired output stream size. Defaults to 75.
+
+    Returns:
+        Stream: sampled stream
+    """
+
+    n = stream.shape[0]
+
+    if n < num_frames:
+        return video_sample_frames(stream=np.repeat(stream, 2), num_frames=num_frames)
+    else:
+        idx = random.sample(population=range(0, n), k=num_frames)
+        idx.sort()
+        return stream[idx]

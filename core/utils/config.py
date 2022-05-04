@@ -26,5 +26,5 @@ emotion = {
     "happy": 3,
     "sad": 4,
     "surprise": 5,
-    "neutral": 6
+    "neutral": 6,
 }
