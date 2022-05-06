@@ -4,9 +4,12 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Tuple
+from dotenv import load_dotenv
 
 root = Path(__file__).parents[2].resolve()
 sys.path.insert(0, str(root))
+
+assert load_dotenv(".env")
 
 from core.utils.config import BaselineConfig, emotion
 from core.utils.types import PathLike, Optional
@@ -28,10 +31,10 @@ from tensorflow.keras.callbacks import (
 from tensorflow.keras.losses import categorical_crossentropy
 
 
-training_timestamp = datetime.utcnow().strftime("%Y-%m-%d-%H%M")
+training_timestamp = datetime.utcnow().strftime(os.environ['DATETIME_FMT'])
 
-data_dir = root.joinpath("data/fer")
-log_dir = root.joinpath(os.path.join("logs/baseline/training", training_timestamp))
+data_dir = root.joinpath("data/affectnet")
+log_dir = root.joinpath(os.path.join("logs/baseline/", training_timestamp))
 model_save_dir = root.joinpath(os.path.join("models/baseline", training_timestamp))
 
 assert data_dir.exists()
@@ -39,7 +42,7 @@ log_dir.mkdir(mode=750, exist_ok=True)
 model_save_dir.mkdir(mode=750, exist_ok=True)
 
 # training params
-batch_size = 8
+batch_size = 32
 learning_rate = 1e-3  # 设置学习率为1e-3
 epochs = 40  # 训练轮数
 
@@ -75,13 +78,14 @@ def process_image(path):
 def generate_tf_dataset(path: os.PathLike):
 
     image_list = list(path.rglob("*.jpg"))
+
     label_list = [emotion[path.parent.name] for path in image_list]
 
     # image
     image_dataset = data.Dataset.from_tensor_slices(
         [str(path) for path in image_list]
     ).map(process_image)
-    
+
     # label
     label_dataset = data.Dataset.from_tensor_slices(label_list).map(
         lambda x: one_hot(indices=x, depth=7, dtype=dtypes.uint8)
@@ -98,7 +102,7 @@ def generate_callbacks() -> list:
     """
     # set learning rate reducing policy
     reduce_learning_rate = ReduceLROnPlateau(
-        monitor="val_loss", factor=0.1, patience=2, verbose=0
+        monitor="val_accuracy", factor=0.2, patience=5, verbose=0
     )  # 学习率衰减策略
 
     # set checkpoints
@@ -172,16 +176,14 @@ def start_training(weights: Optional[PathLike]):
     # generate dataset and preprocessing
 
     train_dataset = (
-        generate_tf_dataset(data_dir.joinpath("train"))
-        .shuffle(buffer_size=1600)
+        generate_tf_dataset(data_dir.joinpath("train/faces"))
+        .shuffle(buffer_size=1000)
         .batch(batch_size=batch_size, drop_remainder=False)
         .prefetch(buffer_size=2)
     )
     test_dataset = (
-        generate_tf_dataset(data_dir.joinpath("test"))
-        .shuffle(buffer_size=1600)
-        .batch(batch_size=batch_size, drop_remainder=False)
-        .prefetch(buffer_size=2)
+        generate_tf_dataset(data_dir.joinpath("test/faces"))
+        .shuffle(buffer_size=1000)
     )
 
     densenet = load_densenet()
