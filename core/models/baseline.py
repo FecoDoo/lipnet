@@ -9,7 +9,7 @@ from tensorflow.keras.layers import Dense, Dropout
 from core.utils.types import Stream
 
 # params
-ADAM_LEARN_RATE = 1e-4
+ADAM_LEARN_RATE = 1e-3
 
 class DenseNet(object):
     def __init__(self, config) -> None:
@@ -72,6 +72,13 @@ class DenseNet(object):
             loss=categorical_crossentropy, optimizer=Adam(learning_rate=ADAM_LEARN_RATE)
         )
     
+    def fit(
+        self,
+        *args,
+        **kwargs
+    ):
+        return self.model.fit(*args,**kwargs)
+        
     def summary(self):
         return self.model.summary()
 
