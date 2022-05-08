@@ -15,20 +15,14 @@ from core.utils.config import BaselineConfig, emotion
 from core.utils.types import PathLike, Optional
 
 from tensorflow import dtypes, one_hot, io, image, data
-from tensorflow.keras.applications.densenet import DenseNet121
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import (
-    Dense,
-    Dropout,
-)
-from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import (
     ReduceLROnPlateau,
     ModelCheckpoint,
     EarlyStopping,
     TensorBoard,
 )
-from tensorflow.keras.losses import categorical_crossentropy
+from core.models.baseline import DenseNet
+from core.utils.config import BaselineConfig
 
 
 training_timestamp = datetime.utcnow().strftime(os.environ['DATETIME_FMT'])
@@ -42,8 +36,7 @@ log_dir.mkdir(mode=750, exist_ok=True)
 model_save_dir.mkdir(mode=750, exist_ok=True)
 
 # training params
-batch_size = 32
-learning_rate = 1e-3  # 设置学习率为1e-3
+batch_size = 128
 epochs = 40  # 训练轮数
 
 # model params
@@ -128,42 +121,20 @@ def generate_callbacks() -> list:
     return [early_stopping, checkpoint, reduce_learning_rate, tensorboard]
 
 
-def load_densenet():
+def load_baseline(pivot=149):
     """load pre-trained densenet121 and set learnable layers
 
     Returns:
-        densenet: DenseNet121 instance
+        model: TensorFlow Model instance
     """
-    densenet = DenseNet121(
-        weights="imagenet", include_top=False, input_shape=frame_shape, pooling="avg"
-    )
+    model = DenseNet(BaselineConfig())
 
-    for layer in densenet.layers[:149]:
+    for layer in model.layers[:pivot]:
         layer.trainable = False
-    for layer in densenet.layers[149:]:
+    for layer in model.layers[pivot:]:
         layer.trainable = True
 
-    return densenet
-
-
-def customize_layers(baseline_model):
-    """add layers to baseline model
-
-    Args:
-        baseline_model (DenseNet121): baseline model instance
-
-    Returns:
-        layer: last layer of the new model
-    """
-    layer = Dense(256, activation="relu")(baseline_model.output)
-    layer = Dropout(0.7)(layer)
-    layer = Dense(128, activation="relu")(layer)
-    layer = Dropout(0.5)(layer)
-    layer = Dense(64, activation="relu")(layer)
-    layer = Dropout(0.3)(layer)
-    layer = Dense(7, activation="softmax")(layer)
-
-    return layer
+    return model
 
 
 def start_training(weights: Optional[PathLike]):
@@ -184,19 +155,13 @@ def start_training(weights: Optional[PathLike]):
     test_dataset = (
         generate_tf_dataset(data_dir.joinpath("test/faces"))
         .shuffle(buffer_size=1000)
+        .batch(batch_size=batch_size)
+        .prefetch(buffer_size=2)
     )
 
-    densenet = load_densenet()
+    model = load_baseline(pivot=314)
 
-    output = customize_layers(densenet)
-
-    model = Model(inputs=densenet.input, outputs=output)
-
-    model.compile(
-        loss=categorical_crossentropy,
-        optimizer=Adam(learning_rate=learning_rate),
-        metrics=["accuracy"],
-    )
+    model.compile()
 
     if weights:
         model.load_weights(weights)
