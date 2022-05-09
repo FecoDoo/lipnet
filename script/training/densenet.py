@@ -1,9 +1,7 @@
-# %%
 import os
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Tuple
 from dotenv import load_dotenv
 
 root = Path(__file__).parents[2].resolve()
@@ -32,11 +30,11 @@ log_dir = root.joinpath(os.path.join("logs/baseline/", training_timestamp))
 model_save_dir = root.joinpath(os.path.join("models/baseline", training_timestamp))
 
 assert data_dir.exists()
-log_dir.mkdir(mode=750, exist_ok=True)
-model_save_dir.mkdir(mode=750, exist_ok=True)
+log_dir.mkdir(exist_ok=True)
+model_save_dir.mkdir(exist_ok=True)
 
 # training params
-batch_size = 128
+batch_size = 16
 epochs = 40  # 训练轮数
 
 # model params
@@ -95,15 +93,15 @@ def generate_callbacks() -> list:
     """
     # set learning rate reducing policy
     reduce_learning_rate = ReduceLROnPlateau(
-        monitor="val_accuracy", factor=0.2, patience=5, verbose=0
+        monitor="val_loss", factor=0.2, patience=5, verbose=0
     )  # 学习率衰减策略
 
     # set checkpoints
     checkpoint = ModelCheckpoint(
         model_save_dir.joinpath(
-            "densenet121_{epoch:03d}_{val_accuracy:.2f}_{val_loss:.2f}.h5"
+            "densenet121_{epoch:02d}_{val_loss:.2f}.h5"
         ),
-        monitor="val_accuracy",
+        monitor="val_loss",
         verbose=1,
         save_best_only=True,
         save_weights_only=True,
@@ -113,7 +111,7 @@ def generate_callbacks() -> list:
 
     # early stopping strategy
     early_stopping = EarlyStopping(
-        monitor="val_accuracy", patience=4, verbose=0, mode="auto"
+        monitor="val_loss", patience=4, verbose=0, mode="auto"
     )
     # Tensorboard
     tensorboard = TensorBoard(log_dir=str(log_dir))
@@ -121,7 +119,7 @@ def generate_callbacks() -> list:
     return [early_stopping, checkpoint, reduce_learning_rate, tensorboard]
 
 
-def load_baseline(pivot=149):
+def load_baseline(pivot=313):
     """load pre-trained densenet121 and set learnable layers
 
     Returns:
@@ -129,10 +127,10 @@ def load_baseline(pivot=149):
     """
     model = DenseNet(BaselineConfig())
 
-    for layer in model.layers[:pivot]:
-        layer.trainable = False
-    for layer in model.layers[pivot:]:
-        layer.trainable = True
+    # for layer in model.basemodel.layers[:pivot]:
+    #     layer.trainable = False
+    # for layer in model.basemodel.layers[pivot:]:
+    #     layer.trainable = True
 
     return model
 
@@ -148,23 +146,28 @@ def start_training(weights: Optional[PathLike]):
 
     train_dataset = (
         generate_tf_dataset(data_dir.joinpath("train/faces"))
-        .shuffle(buffer_size=1000)
+        .cache()
         .batch(batch_size=batch_size, drop_remainder=False)
         .prefetch(buffer_size=2)
     )
     test_dataset = (
         generate_tf_dataset(data_dir.joinpath("test/faces"))
-        .shuffle(buffer_size=1000)
-        .batch(batch_size=batch_size)
+        .cache()
+        .batch(batch_size=batch_size, drop_remainder=True)
         .prefetch(buffer_size=2)
     )
 
-    model = load_baseline(pivot=314)
+    model = load_baseline()
 
-    model.compile()
-
+    # fine-tuning
     if weights:
+        adam_learning_rate = 1e-5
+        model.basemodel.trainable = True
         model.load_weights(weights)
+    else:
+        adam_learning_rate = 1e-3
+    
+    model.compile(adam_learning_rate=adam_learning_rate)
 
     callbacks = generate_callbacks()
 
