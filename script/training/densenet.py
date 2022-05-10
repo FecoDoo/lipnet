@@ -23,7 +23,7 @@ from core.models.baseline import DenseNet
 from core.utils.config import BaselineConfig
 
 
-training_timestamp = datetime.utcnow().strftime(os.environ['DATETIME_FMT'])
+training_timestamp = datetime.utcnow().strftime(os.environ["DATETIME_FMT"])
 
 data_dir = root.joinpath("data/affectnet")
 log_dir = root.joinpath(os.path.join("logs/baseline/", training_timestamp))
@@ -98,9 +98,7 @@ def generate_callbacks() -> list:
 
     # set checkpoints
     checkpoint = ModelCheckpoint(
-        model_save_dir.joinpath(
-            "densenet121_{epoch:02d}_{val_loss:.2f}.h5"
-        ),
+        model_save_dir.joinpath("densenet121_{epoch:02d}_{val_loss:.2f}.h5"),
         monitor="val_loss",
         verbose=1,
         save_best_only=True,
@@ -116,7 +114,7 @@ def generate_callbacks() -> list:
     # Tensorboard
     tensorboard = TensorBoard(log_dir=str(log_dir))
 
-    return [early_stopping, checkpoint, reduce_learning_rate, tensorboard]
+    return [checkpoint, reduce_learning_rate, tensorboard]
 
 
 def load_baseline(pivot=313):
@@ -146,13 +144,11 @@ def start_training(weights: Optional[PathLike]):
 
     train_dataset = (
         generate_tf_dataset(data_dir.joinpath("train/faces"))
-        .cache()
         .batch(batch_size=batch_size, drop_remainder=False)
         .prefetch(buffer_size=2)
     )
     test_dataset = (
         generate_tf_dataset(data_dir.joinpath("test/faces"))
-        .cache()
         .batch(batch_size=batch_size, drop_remainder=True)
         .prefetch(buffer_size=2)
     )
@@ -160,14 +156,13 @@ def start_training(weights: Optional[PathLike]):
     model = load_baseline()
 
     # fine-tuning
-    if weights:
-        adam_learning_rate = 1e-5
-        model.basemodel.trainable = True
+    if weights is not None:
         model.load_weights(weights)
+        model.basemodel.trainable = True
+        model.compile(adam_learning_rate=1e-5)
+
     else:
-        adam_learning_rate = 1e-3
-    
-    model.compile(adam_learning_rate=adam_learning_rate)
+        model.compile(adam_learning_rate=1e-3)
 
     callbacks = generate_callbacks()
 
