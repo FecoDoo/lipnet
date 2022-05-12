@@ -19,7 +19,7 @@ from tensorflow.keras.callbacks import (
     EarlyStopping,
     TensorBoard,
 )
-from core.models.baseline import DenseNet
+from core.models.baseline import Xception_Baseline, DenseNet_Baseline, MobileNet_Baseline, VGG19_Baseline
 from core.utils.config import BaselineConfig
 
 
@@ -38,12 +38,12 @@ batch_size = 16
 epochs = 40  # 训练轮数
 
 # model params
-densenet_config = BaselineConfig()
+baseline_config = BaselineConfig()
 
 frame_shape = (
-    densenet_config.image_height,
-    densenet_config.image_width,
-    densenet_config.image_channels,
+    baseline_config.image_height,
+    baseline_config.image_width,
+    baseline_config.image_channels,
 )
 
 
@@ -85,7 +85,7 @@ def generate_tf_dataset(path: os.PathLike):
     return data.Dataset.zip((image_dataset, label_dataset))
 
 
-def generate_callbacks() -> list:
+def generate_callbacks(model_name: str) -> list:
     """generate tensorflow callback functions
 
     Returns:
@@ -98,7 +98,7 @@ def generate_callbacks() -> list:
 
     # set checkpoints
     checkpoint = ModelCheckpoint(
-        model_save_dir.joinpath("densenet121_{epoch:02d}_{val_loss:.2f}.h5"),
+        model_save_dir.joinpath(model_name + "_{epoch:02d}_{val_loss:.2f}.h5"),
         monitor="val_loss",
         verbose=1,
         save_best_only=True,
@@ -118,12 +118,12 @@ def generate_callbacks() -> list:
 
 
 def load_baseline(pivot=313):
-    """load pre-trained densenet121 and set learnable layers
+    """load baseline model and set learnable layers
 
     Returns:
         model: TensorFlow Model instance
     """
-    model = DenseNet(BaselineConfig())
+    model = DenseNet_Baseline(baseline_config)
 
     # for layer in model.basemodel.layers[:pivot]:
     #     layer.trainable = False
@@ -164,7 +164,7 @@ def start_training(weights: Optional[PathLike]):
     else:
         model.compile(adam_learning_rate=1e-3)
 
-    callbacks = generate_callbacks()
+    callbacks = generate_callbacks(model.basemodel_name)
 
     history = model.fit(
         x=train_dataset,
