@@ -1,4 +1,3 @@
-
 import mediapipe as mp
 import numpy as np
 import cv2
@@ -46,7 +45,7 @@ def get_box(frame, all_landmarks, landmarks) -> Frame:
     Args:
         frame (Frame): image
         all_landmarks (_type_): landmarks predicted by mediapipe
-        landmarks (_type_): landmarks at the middle of bounding box's edges 
+        landmarks (_type_): landmarks at the middle of bounding box's edges
 
     Returns:
         Frame: cropped image
