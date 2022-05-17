@@ -14,7 +14,7 @@ face_landmarks = {"left": 127, "right": 356, "bottom": 152, "top": 10}
 
 
 def get_relative_coordinates(landmark):
-    return np.array([landmark.y, landmark.x])
+    return np.array([landmark.y, landmark.x], dtype=np.float32)
 
 
 def get_absolute_coordinates(shape, landmark):
@@ -57,8 +57,8 @@ def get_box(frame, all_landmarks, landmarks) -> Frame:
         frame.shape[:2], all_landmarks[landmarks["bottom"]]
     )
 
-    top_left = np.array([top[0], left[1]])
-    bottom_right = np.array([bottom[0], right[1]])
+    top_left = np.array([top[0], left[1]], dtype=np.int16)
+    bottom_right = np.array([bottom[0], right[1]], dtype=np.int16)
 
     box = np.append(arr=top_left, values=bottom_right)
 
@@ -102,7 +102,6 @@ def segmentation(frame, detected_landmarks):
 
     lip = get_box(frame, detected_landmarks, lip_landmarks)
     face = get_box(frame, detected_landmarks, face_landmarks)
-
     return face, lip
 
 
@@ -127,7 +126,8 @@ def recognition(frame: Frame) -> Tuple[Frame]:
         results = face_mesh.process(frame)
 
         if not results.multi_face_landmarks:
-            return None
+            print("no face detected")
+            return None, None
 
         face_crop, lip_crop = segmentation(
             frame, results.multi_face_landmarks[0].landmark

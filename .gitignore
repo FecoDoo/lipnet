@@ -173,9 +173,11 @@ utils/predictors/
 videos/
 images/
 test/
+docs/
 .cache
 
 models/
 !core/models
 
-script/testing/
+script/
+!script/training/
