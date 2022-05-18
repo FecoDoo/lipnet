@@ -17,47 +17,94 @@ class LipNet(object):
         config: LipNetConfig,
     ):
         input_shape = self.get_input_shape(
-            config.frame_count,            
+            config.frame_count,
             config.image_height,
             config.image_width,
             config.image_channels,
         )
         self.input_layer = layers.create_input_layer("lipnet_input", input_shape)
 
-        self.zero_1 = layers.create_zero_layer(name="lipnet_zero_1", input_layer=self.input_layer)
-        self.conv_1 = layers.create_conv_layer(name="lipnet_conv_1", input_layer=self.zero_1, filters=32)
-        self.batc_1 = layers.create_batc_layer(name="lipnet_batc_1", input_layer=self.conv_1)
-        self.actv_1 = layers.create_actv_layer(name="lipnet_actv_1", input_layer=self.batc_1)
-        self.pool_1 = layers.create_pool_layer(name="lipnet_pool_1", input_layer=self.actv_1)
-        self.drop_1 = layers.create_spatial_drop_layer(name="lipnet_drop_1", input_layer=self.pool_1)
+        self.zero_1 = layers.create_zero_layer(
+            name="lipnet_zero_1", input_layer=self.input_layer
+        )
+        self.conv_1 = layers.create_conv_layer(
+            name="lipnet_conv_1", input_layer=self.zero_1, filters=32
+        )
+        self.batc_1 = layers.create_batc_layer(
+            name="lipnet_batc_1", input_layer=self.conv_1
+        )
+        self.actv_1 = layers.create_actv_layer(
+            name="lipnet_actv_1", input_layer=self.batc_1
+        )
+        self.pool_1 = layers.create_pool_layer(
+            name="lipnet_pool_1", input_layer=self.actv_1
+        )
+        self.drop_1 = layers.create_spatial_drop_layer(
+            name="lipnet_drop_1", input_layer=self.pool_1
+        )
 
-        self.zero_2 = layers.create_zero_layer(name="lipnet_zero_2", input_layer=self.drop_1)
-        self.conv_2 = layers.create_conv_layer(name="lipnet_conv_2", input_layer=self.zero_2, filters=64)
-        self.batc_2 = layers.create_batc_layer(name="lipnet_batc_2", input_layer=self.conv_2)
-        self.actv_2 = layers.create_actv_layer(name="lipnet_actv_2", input_layer=self.batc_2)
-        self.pool_2 = layers.create_pool_layer(name="lipnet_pool_2", input_layer=self.actv_2)
-        self.drop_2 = layers.create_spatial_drop_layer(name="lipnet_drop_2", input_layer=self.pool_2)
+        self.zero_2 = layers.create_zero_layer(
+            name="lipnet_zero_2", input_layer=self.drop_1
+        )
+        self.conv_2 = layers.create_conv_layer(
+            name="lipnet_conv_2", input_layer=self.zero_2, filters=64
+        )
+        self.batc_2 = layers.create_batc_layer(
+            name="lipnet_batc_2", input_layer=self.conv_2
+        )
+        self.actv_2 = layers.create_actv_layer(
+            name="lipnet_actv_2", input_layer=self.batc_2
+        )
+        self.pool_2 = layers.create_pool_layer(
+            name="lipnet_pool_2", input_layer=self.actv_2
+        )
+        self.drop_2 = layers.create_spatial_drop_layer(
+            name="lipnet_drop_2", input_layer=self.pool_2
+        )
 
         self.zero_3 = layers.create_zero_layer(
             name="lipnet_zero_3", input_layer=self.drop_2, padding=(1, 1, 1)
         )
         self.conv_3 = layers.create_conv_layer(
-            name="lipnet_conv_3", input_layer=self.zero_3, filters=96, kernel_size=(3, 3, 3)
+            name="lipnet_conv_3",
+            input_layer=self.zero_3,
+            filters=96,
+            kernel_size=(3, 3, 3),
         )
-        self.batc_3 = layers.create_batc_layer(name="lipnet_batc_3", input_layer=self.conv_3)
-        self.actv_3 = layers.create_actv_layer(name="lipnet_actv_3", input_layer=self.batc_3)
-        self.pool_3 = layers.create_pool_layer(name="lipnet_pool_3", input_layer=self.actv_3)
-        self.drop_3 = layers.create_spatial_drop_layer(name="lipnet_drop_3", input_layer=self.pool_3)
+        self.batc_3 = layers.create_batc_layer(
+            name="lipnet_batc_3", input_layer=self.conv_3
+        )
+        self.actv_3 = layers.create_actv_layer(
+            name="lipnet_actv_3", input_layer=self.batc_3
+        )
+        self.pool_3 = layers.create_pool_layer(
+            name="lipnet_pool_3", input_layer=self.actv_3
+        )
+        self.drop_3 = layers.create_spatial_drop_layer(
+            name="lipnet_drop_3", input_layer=self.pool_3
+        )
 
-        self.timed_0 = layers.create_timed_layer(name="lipnet_timed_0", input_layer=self.drop_3)
+        self.timed_0 = layers.create_timed_layer(
+            name="lipnet_timed_0", input_layer=self.drop_3
+        )
 
-        self.gru_1 = layers.create_bi_gru_layer(name="lipnet_gru_1", input_layer=self.timed_0)
-        self.gru_1_actv = layers.create_actv_layer(name="lipnet_gru_1_actv", input_layer=self.gru_1)
-        self.gru_2 = layers.create_bi_gru_layer(name="lipnet_gru_2", input_layer=self.gru_1_actv)
-        self.gru_2_actv = layers.create_actv_layer(name="lipnet_gru_2_actv", input_layer=self.gru_2)
+        self.gru_1 = layers.create_bi_gru_layer(
+            name="lipnet_gru_1", input_layer=self.timed_0
+        )
+        self.gru_1_actv = layers.create_actv_layer(
+            name="lipnet_gru_1_actv", input_layer=self.gru_1
+        )
+        self.gru_2 = layers.create_bi_gru_layer(
+            name="lipnet_gru_2", input_layer=self.gru_1_actv
+        )
+        self.gru_2_actv = layers.create_actv_layer(
+            name="lipnet_gru_2_actv", input_layer=self.gru_2
+        )
 
         self.dense_1 = layers.create_dense_layer(
-            name="lipnet_dense_1", input_layer=self.gru_2_actv, output_size=config.output_size
+            name="lipnet_dense_1",
+            input_layer=self.gru_2_actv,
+            output_size=config.output_size,
         )
         self.y_pred = layers.create_actv_layer(
             name="lipnet_softmax", input_layer=self.dense_1, activation="softmax"
@@ -115,7 +162,7 @@ class LipNet(object):
 
     def summary(self):
         return self.model.summary()
-    
+
     @staticmethod
     def get_input_shape(
         frame_count: int, image_height: int, image_width: int, image_channels: int
@@ -135,11 +182,11 @@ class LipNet(object):
     @property
     def lipnet_timed_layer(self):
         return self.timed_0
-    
+
     @property
     def layers(self):
         return self.model.layers
-    
+
     @property
     def input(self):
         return self.input_layer

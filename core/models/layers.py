@@ -104,7 +104,9 @@ def create_bi_gru_layer(
     )(input_layer)
 
 
-def create_timed_layer(name: str, input_layer, target_layer=Flatten()) -> TimeDistributed:
+def create_timed_layer(
+    name: str, input_layer, target_layer=Flatten()
+) -> TimeDistributed:
     return TimeDistributed(layer=target_layer, name=name)(input_layer)
 
 
@@ -134,6 +136,8 @@ def create_ctc_layer(
 
 
 def create_concatenate_layer(
-    input_layers: list, name: str, axis: int = -1, 
+    input_layers: list,
+    name: str,
+    axis: int = -1,
 ):
     return Concatenate(name=name, axis=axis)(input_layers)

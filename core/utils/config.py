@@ -4,9 +4,9 @@ from dataclasses import dataclass
 @dataclass(repr=True)
 class LipNetConfig:
     frame_count: int = 75
-    image_channels: int = 3
     image_height: int = 50
     image_width: int = 100
+    image_channels: int = 3
     max_string: int = 32
     output_size: int = 28
 
@@ -15,8 +15,8 @@ class LipNetConfig:
 class BaselineConfig:
     batch_size: int = 75
     image_channels: int = 3
-    image_height: int = 244
-    image_width: int = 244
+    image_height: int = 224
+    image_width: int = 224
 
 
 emotion = {
@@ -26,5 +26,5 @@ emotion = {
     "happy": 3,
     "sad": 4,
     "surprise": 5,
-    "neutral": 6
+    "neutral": 6,
 }
