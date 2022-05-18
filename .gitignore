@@ -181,3 +181,7 @@ models/
 
 script/
 !script/training/
+
+slurm*.out
+*.sh
+*.npy

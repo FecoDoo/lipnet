@@ -1,4 +1,3 @@
-import os
 import cv2
 import warnings
 import numpy as np
@@ -6,7 +5,7 @@ import random
 from pathlib import Path
 from functools import wraps
 from skvideo.io import vread, ffprobe
-from core.utils.types import Stream, Optional, Frame, Union, Tuple, List
+from core.utils.types import Stream, Optional, Frame, Union, Tuple, List, Path
 
 
 def video_input_validation(func):
@@ -21,23 +20,23 @@ def video_input_validation(func):
 
 
 @video_input_validation
-def video_to_numpy(stream: Stream, output_path: os.PathLike) -> None:
+def video_to_numpy(stream: Stream, output_path: Path) -> None:
     """Save video stream into npy
 
     Args:
         stream (Stream): video stream, in the format of (T x H x W x C)
-        output_path (os.PathLike): output target path
+        output_path (Path): output target path
     """
-    np.save(output_path, stream, allow_pickle=False, dtype=np.uint8)
+    np.save(output_path, stream, allow_pickle=False)
 
 
 def video_read(
-    video_path: os.PathLike, num_frames=75, complete=False
-) -> Optional[Stream]:
+    video_path: Path, num_frames: int = 75, complete: bool = False
+) -> Stream:
     """Load video to array
 
     Args:
-        video_path (os.PathLike): video file path
+        video_path (Path): video file path
         num_frames (int, optional): read first n frames. Defaults to 75.
         entire (bool): if true, ignore num_frames and load the entire video file into memory
         This may be risky when loading large video file which may leads to running out of memory
@@ -45,22 +44,20 @@ def video_read(
     Returns:
         Optional[Stream]: video stream, in the format of (T x H x W x C)
     """
-    if not isinstance(video_path, os.PathLike):
+    if not isinstance(video_path, Path):
         video_path = Path(video_path)
 
     if not video_path.is_file():
         raise ValueError(f"{video_path} does not exist")
 
     if complete:
-        metadata = ffprobe(video_path)
-
-        if metadata is None:
-            raise ValueError(f"could not read metadata from {video_path}")
-
-        num_frames = metadata.get("video").get("@nb_frames")
+        if metadata := ffprobe(video_path):
+            if video_info := metadata.get("video"):
+                num_frames = video_info.get("@nb_frames")
 
         if num_frames is None:
-            raise TypeError(f"metadata corrupted for {video_path}")
+            raise ValueError(f"could not read metadata from {video_path}")
+
 
         num_frames = int(num_frames)
 
@@ -76,11 +73,11 @@ def video_read(
     return stream
 
 
-def video_read_from_npy(video_path: os.PathLike) -> Stream:
+def video_read_from_npy(video_path: Path) -> Stream:
     """Load video from npy
 
     Args:
-        video_path (os.PathLike): path to npy
+        video_path (Path): path to npy
 
     Raises:
         ValueError: Raised if target npy contains no frames
@@ -88,9 +85,7 @@ def video_read_from_npy(video_path: os.PathLike) -> Stream:
     Returns:
         Stream: Stream
     """
-    stream = np.load(
-        file=video_path, allow_pickle=False, dtype=np.uint8
-    )
+    stream = np.load(file=video_path, allow_pickle=False)
 
     if stream.size <= 0:
         raise ValueError(f"video {video_path} is empty")
@@ -125,14 +120,20 @@ def video_swap_axis(
         Union[Stream, Frame]: video sequence or single frame
     """
 
+    res = None
+
     if mode == "stream":
-        return np.swapaxes(stream, 1, 2)
+        res = np.swapaxes(stream, 1, 2)
     elif mode == "frame":
-        return np.swapaxes(stream, 0, 1)
+        res = np.swapaxes(stream, 0, 1)
+
+    return res
 
 
 # @video_input_validation
-def video_transform(stream: Stream, dsize: Tuple[int]) -> Stream:
+def video_transform(
+    stream: Union[Stream, List[Frame]], dsize: Tuple[int, int]
+) -> Stream:
     """preprocess input video sequence according to selected models
 
     Args:
@@ -146,7 +147,7 @@ def video_transform(stream: Stream, dsize: Tuple[int]) -> Stream:
         # cv.resize consider frame as W x H
         dsize = (dsize[1], dsize[0])
     else:
-        raise ValueError("no dsize is provided")
+        raise ValueError(f"dsize is not tuple, got {type(dsize)}: {dsize}")
 
     return np.stack([cv2.resize(src=frame, dsize=dsize) for frame in stream])
 
@@ -186,7 +187,7 @@ def video_padding_frames(stream: Stream) -> Stream:
     length = len(stream)
 
     mask = []
-    for idx, value in enumerate(stream):
+    for idx, value in enumerate(stream.tolist()):
         if value is None:
             mask.append(idx)
 
@@ -207,11 +208,11 @@ def video_padding_frames(stream: Stream) -> Stream:
     return stream
 
 
-def find_next_non_empty_frame(mask: np.ndarray, max_idx: int) -> List[int]:
+def find_next_non_empty_frame(mask: List[int], max_idx: int) -> List[int]:
     """find next non-empty frame index regarding of current index respectively
 
     Args:
-        mask (np.ndarray): list of empty frame index
+        mask (list): list of empty frame index
         max_idx (int): last index of the stream
 
     Returns:
@@ -231,11 +232,11 @@ def find_next_non_empty_frame(mask: np.ndarray, max_idx: int) -> List[int]:
     return res
 
 
-def find_prev_non_empty_frame(mask: np.ndarray):
+def find_prev_non_empty_frame(mask: List[int]):
     """find previous non-empty frame index regarding of current index respectively
 
     Args:
-        mask (np.ndarray): list of empty frame index
+        mask (list): list of empty frame index
         
     Returns:
         List[int]: list of previous non-empty frame index regarding of current index

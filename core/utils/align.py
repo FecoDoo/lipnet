@@ -2,7 +2,7 @@ import os
 from dataclasses import dataclass
 import numpy as np
 from core.utils.label import text_to_labels
-from core.utils.types import Labels
+from core.utils.types import Labels, Path
 
 __SILENCE_TOKENS = ["sp", "sil"]
 
@@ -16,11 +16,11 @@ class Align:
     length: int
 
 
-def align_from_file(align_path: os.PathLike, max_string: int) -> Align:
+def align_from_file(align_path: Path, max_string: int) -> Align:
     """Load align info from file
 
     Args:
-        align_path (os.PathLike): path to .align file
+        align_path (Path): path to .align file
         max_string (int): the maximum amount of characters to expect as the encoded align sentence vector
 
     Returns:

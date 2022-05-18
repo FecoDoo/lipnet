@@ -1,12 +1,11 @@
 import csv
-import os
 import editdistance
 import numpy as np
 from tensorflow.keras.callbacks import Callback, CSVLogger, ModelCheckpoint, TensorBoard
 from tensorflow.keras.utils import Sequence
 from core.decoding.decoder import Decoder
 from core.models.lipnet import LipNet
-from core.utils.types import List, Tuple, Callable
+from core.utils.types import List, Tuple, Callable, Path
 from jiwer import (
     wer,
     Compose,
@@ -20,7 +19,7 @@ from jiwer import (
 class ErrorRates(Callback):
     def __init__(
         self,
-        output_path: os.PathLike,
+        output_path: Path,
         lipnet: LipNet,
         val_generator: Sequence,
         decoder: Decoder,
