@@ -2,7 +2,7 @@ import numpy as np
 import os
 from tensorflow.keras.utils import Sequence
 from core.utils.video import video_read
-from core.utils.types import List, Tuple
+from core.utils.types import List, Tuple, Path, Stream, Labels
 
 
 class BatchGenerator(Sequence):
@@ -14,9 +14,7 @@ class BatchGenerator(Sequence):
         [os.environ.get("STD_R"), os.environ.get("STD_G"), os.environ.get("STD_B")]
     )
 
-    def __init__(
-        self, video_paths: List[os.PathLike], align_hash: dict, batch_size: int
-    ):
+    def __init__(self, video_paths: List[Path], align_hash: dict, batch_size: int):
         super().__init__()
 
         self.video_paths = video_paths
@@ -96,7 +94,7 @@ class BatchGenerator(Sequence):
 
         return inputs, outputs
 
-    def get_data_from_path(self, path: str) -> Tuple[np.ndarray, str, np.ndarray, int]:
+    def get_data_from_path(self, path: Path) -> Tuple[Stream, str, Labels, int]:
         align = self.align_hash[path.stem]
         return (
             video_read(path),
@@ -106,10 +104,10 @@ class BatchGenerator(Sequence):
         )
 
     @staticmethod
-    def flip_video(video_data: np.ndarray) -> np.ndarray:
+    def flip_video(video_data: Stream) -> Stream:
         return np.flip(
             video_data, axis=1
         )  # flip in the vertical axis because videos are flipped 90deg when passed to the model
 
-    def standardize_batch(self, batch: np.ndarray) -> np.ndarray:
+    def standardize_batch(self, batch: Stream) -> Stream:
         return (batch - self.__video_mean) / (self.__video_std + 1e-6)

@@ -1,7 +1,7 @@
 import mediapipe as mp
 import numpy as np
 import cv2
-from core.utils.types import Frame, Tuple, List
+from core.utils.types import Frame, Tuple, List, Optional, Path
 
 mp_face_mesh = mp.solutions.face_mesh
 mp_face_detection = mp.solutions.face_detection
@@ -105,7 +105,7 @@ def segmentation(frame, detected_landmarks):
     return face, lip
 
 
-def recognition(frame: Frame) -> Tuple[Frame]:
+def recognition(frame: Frame) -> Tuple[Optional[Frame], Optional[Frame]]:
     """crop face and lip area from the given frame
 
     Args:
