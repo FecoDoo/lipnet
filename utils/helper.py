@@ -21,4 +21,3 @@ def display_results(
         if visualize:
             stream = video_read(video_path, complete=True)
             visualize_video_subtitle(stream, r)
-

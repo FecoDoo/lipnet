@@ -58,7 +58,6 @@ def video_read(
         if num_frames is None:
             raise ValueError(f"could not read metadata from {video_path}")
 
-
         num_frames = int(num_frames)
 
         if num_frames > 1000:
@@ -68,7 +67,7 @@ def video_read(
 
         stream = vread(fname=video_path, num_frames=int(num_frames) - 1)
     else:
-        stream = vread(fname=video_path, num_frames=num_frames - 1)
+        stream = vread(fname=video_path, num_frames=num_frames)
 
     return stream
 
@@ -237,7 +236,7 @@ def find_prev_non_empty_frame(mask: List[int]):
 
     Args:
         mask (list): list of empty frame index
-        
+
     Returns:
         List[int]: list of previous non-empty frame index regarding of current index
     """
