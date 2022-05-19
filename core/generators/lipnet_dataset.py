@@ -2,7 +2,7 @@ import os
 import pickle
 import random
 from core.utils.types import List, Tuple, Dict, Path
-from core.generators.batch_generator import BatchGenerator
+from core.generators.dnn_generator import BatchGenerator
 from core.utils.align import Align, align_from_file
 
 

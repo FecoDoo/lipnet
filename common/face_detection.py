@@ -126,7 +126,7 @@ def recognition(frame: Frame) -> Tuple[Optional[Frame], Optional[Frame]]:
         results = face_mesh.process(frame)
 
         if not results.multi_face_landmarks:
-            print("no face detected")
+            # no face detected
             return None, None
 
         face_crop, lip_crop = segmentation(

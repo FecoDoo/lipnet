@@ -3,7 +3,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.backend import image_data_format
 from core.utils.config import BaselineConfig, LipNetConfig
-from core.utils.types import Stream
+from core.utils.types import Stream, Union, Path
 from core.models.lipnet import LipNet
 from tensorflow.keras.layers import TimeDistributed, Dropout, Dense, GRU, Bidirectional
 from tensorflow.keras.layers import Input, Concatenate
@@ -14,8 +14,8 @@ class DNN(object):
         self,
         lipnet_config: LipNetConfig,
         baseline_config: BaselineConfig,
-        lipnet_model_weight: str,
-        baseline_model_weight: str,
+        lipnet_model_weight: Path,
+        baseline_model_weight: Path,
     ) -> None:
 
         baseline_input_shape = self.get_input_shape(
@@ -42,8 +42,7 @@ class DNN(object):
         )
 
         self.dnn_baseline_time_distributed_layer = TimeDistributed(
-            layer=self.baseline,
-            name="dnn_baseline_time_distributed_layer",
+            layer=self.baseline, name="dnn_baseline_time_distributed_layer",
         )(self.dnn_baseline_input_layer)
 
         self.dnn_baseline_bidirectional_layer = Bidirectional(
@@ -60,14 +59,13 @@ class DNN(object):
 
         ############################################
         # combining outputs from both models
-        self.dnn_concatenate_layer = Concatenate(
-            name="dnn_concatenate_layer",
-            axis=2,
-        )([self.lipnet.lipnet_timed_layer, self.dnn_baseline_bidirectional_layer])
+        self.dnn_concatenate_layer = Concatenate(name="dnn_concatenate_layer", axis=2,)(
+            [self.lipnet.lipnet_timed_layer, self.dnn_baseline_bidirectional_layer]
+        )
 
         self.dnn_gru_layer = Bidirectional(
             GRU(
-                units=256,
+                units=512,
                 return_sequences=False,
                 activation="tanh",
                 kernel_initializer="Orthogonal",
@@ -80,24 +78,19 @@ class DNN(object):
         ##########################################
 
         self.dnn_dense_0 = Dense(
-            name="dnn_dense_0", units=256, kernel_initializer="he_normal"
+            name="dnn_dense_0", units=512, kernel_initializer="he_normal"
         )(self.dnn_gru_layer)
 
         # add fc layers
-        self.dnn_dropout_0 = Dropout(
-            name="dnn_dropout_0",
-            rate=0.2,
-        )(self.dnn_dense_0)
+        self.dnn_dropout_0 = Dropout(name="dnn_dropout_0", rate=0.5,)(self.dnn_dense_0)
 
         self.dnn_dense_1 = Dense(
-            name="dnn_dense_1", units=128, kernel_initializer="he_normal"
+            name="dnn_dense_1", units=256, kernel_initializer="he_normal"
         )(self.dnn_dropout_0)
 
-        self.dnn_output = Dense(
-            name="dnn_output",
-            units=7,
-            activation="softmax",
-        )(self.dnn_dense_1)
+        self.dnn_output = Dense(name="dnn_output", units=7, activation="softmax",)(
+            self.dnn_dense_1
+        )
 
         self.model = Model(
             inputs=[self.dnn_baseline_input_layer, self.lipnet.input],
@@ -108,7 +101,7 @@ class DNN(object):
         for layer in model.layers:
             layer.trainable = False
 
-    def compile(self, learning_rate: int = 1e-3, *args, **kwargs):
+    def compile(self, learning_rate: float = 1e-3, *args, **kwargs):
         self.model.compile(
             loss=categorical_crossentropy,
             optimizer=Adam(learning_rate=learning_rate),
