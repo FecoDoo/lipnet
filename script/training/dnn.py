@@ -35,7 +35,7 @@ model = DNN(
     baseline_model_weight=root.joinpath("models/baseline/mobilenet"),
 )
 
-model.compile(learning_rate=1e-3, metrics=["accuracy"])
+model.compile(learning_rate=1e-4, metrics=["accuracy"])
 
 # paths
 log_dir = root.joinpath(os.path.join("logs/dnn/", training_timestamp))
@@ -84,6 +84,8 @@ def generate_callbacks(model_name: str) -> list:
 
 if __name__ == "__main__":
     callbacks = generate_callbacks("dnn")
+
+    model.load_weights(root.joinpath("models/dnn/2022-05-19_1936/dnn_12_0.23.h5"))
 
     history = model.fit(
         x=dataset.train,

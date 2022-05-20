@@ -106,25 +106,31 @@ def video_normalize(stream: Stream) -> Stream:
 
 
 @video_input_validation
-def video_swap_axis(
-    stream: Union[Stream, Frame], mode: str = "stream"
-) -> Union[Stream, Frame]:
+def video_swap_axis(stream: Stream) -> Stream:
     """Swap stream axes
 
     Args:
-        stream (Union[Stream, Frame]): input video sequence or single frame
-        mode (str, optional): mode. Defaults to "stream".
+        stream (Stream): video stream
 
     Returns:
-        Union[Stream, Frame]: video sequence or single frame
+        Stream: video stream
     """
+    res = np.swapaxes(stream, 1, 2)
 
-    res = None
+    return res
 
-    if mode == "stream":
-        res = np.swapaxes(stream, 1, 2)
-    elif mode == "frame":
-        res = np.swapaxes(stream, 0, 1)
+
+@video_input_validation
+def video_flip(stream: Stream):
+    """flip a video sequence horizontally
+
+    Args:
+        stream (Stream): video stream
+
+    Returns:
+        Stream: video stream
+    """
+    res = np.flip(m=stream, axis=1)  # H x W x C
 
     return res
 

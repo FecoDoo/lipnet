@@ -12,7 +12,7 @@ def text_to_labels(text: str) -> Labels:
         elif char == " ":
             ret.append(26)
 
-    return np.array(ret, dtype=np.int16)
+    return np.array(ret, dtype=np.uint8)
 
 
 def labels_to_text(labels: Labels) -> str:
