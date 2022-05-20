@@ -2,8 +2,11 @@ import os
 import pickle
 import random
 from core.utils.types import List, Tuple, Dict, Path
-from core.generators.dnn_generator import BatchGenerator
+from core.generators.lipnet_generator import BatchGenerator
 from core.utils.align import Align, align_from_file
+from utils.logger import get_logger
+
+logger = get_logger("DatasetGenerator")
 
 
 class DatasetGenerator(object):
@@ -32,12 +35,12 @@ class DatasetGenerator(object):
         cache_path = self.dataset_path.joinpath(".cache")
 
         if self.use_cache and cache_path.is_file():
-            print("Loading dataset list from cache...")
+            logger.info("Loading dataset list from cache...")
 
             with open(cache_path, "rb") as f:
                 train_videos, train_aligns, val_videos, val_aligns = pickle.load(f)
         else:
-            print("Enumerating dataset list from disk...")
+            logger.info("Enumerating dataset list from disk...")
 
             groups = self.generate_video_list_by_groups_with_shuffle(self.dataset_path)
             train_videos, val_videos = self.split_speaker_groups(groups, self.val_split)
@@ -50,12 +53,12 @@ class DatasetGenerator(object):
                     obj=(train_videos, train_aligns, val_videos, val_aligns), file=f
                 )
 
-        print(
+        logger.info(
             "Found {} videos and {} aligns for training".format(
                 len(train_videos), len(train_aligns)
             )
         )
-        print(
+        logger.info(
             "Found {} videos and {} aligns for validation\n".format(
                 len(val_videos), len(val_aligns)
             )
@@ -70,7 +73,9 @@ class DatasetGenerator(object):
     def get_numpy_files_in_dir(path: Path) -> List[Path]:
         return list(path.glob("*.npy"))
 
-    def generate_video_list_by_groups_with_shuffle(self, path: Path) -> List[list]:
+    def generate_video_list_by_groups_with_shuffle(
+        self, path: Path
+    ) -> List[List[Path]]:
         """
         Load video file paths of each speaker group into list and return a list of lists
         """

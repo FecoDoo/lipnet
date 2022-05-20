@@ -1,28 +1,35 @@
 import os
-import time
-from typing import NamedTuple
-from datetime import datetime, timedelta
+import sys
 from pathlib import Path
-from utils.logger import get_logger
-from common.decode import create_decoder
-from core.callbacks.callbacks import ErrorRates, CSVLogger, ModelCheckpoint, TensorBoard
-from core.generators.dataset_generator import DatasetGenerator
-from core.models.lipnet import LipNet
+from typing import NamedTuple
+from datetime import datetime
 from dotenv import load_dotenv
+
+root = Path(__file__).parents[2].resolve()
+sys.path.insert(0, str(root))
 
 assert load_dotenv(".env")
 
-ROOT = Path(__file__).parent.resolve()
+from utils.logger import get_logger
+from core.callbacks.callbacks import (
+    ModelCheckpoint,
+    TensorBoard,
+    Callback,
+)
+from core.generators.lipnet_dataset import DatasetGenerator
+from core.models.lipnet import LipNet
+from core.utils.config import LipNetConfig
+from core.utils.types import Path, List
 
 # define dataset paths
-DATA_PATH = ROOT.joinpath(os.environ["GRID_NPY_PATH"])
-ALIGN_PATH = ROOT.joinpath(os.environ["GRID_ALIGN_PATH"])
+DATA_PATH = root.joinpath(root.joinpath("data/grid/npy"))
+ALIGN_PATH = root.joinpath(root.joinpath("data/grid/align"))
 
 # define training params
-LIPNET_MODEL_SAVE_PATH = ROOT.joinpath("models")
-LOG_PATH = ROOT.joinpath("logs/training")
+LIPNET_MODEL_SAVE_PATH = root.joinpath("models/lipnet")
+LOG_PATH = root.joinpath("logs/lipnet")
 
-DICTIONARY_PATH = ROOT.joinpath("data/dictionaries/grid.txt")
+DICTIONARY_PATH = root.joinpath("data/dictionaries/grid.txt")
 
 LIPNET_MODEL_SAVE_PATH.mkdir(exist_ok=True)
 LOG_PATH.mkdir(exist_ok=True)
@@ -37,8 +44,8 @@ class TrainingConfig(NamedTuple):
         NamedTuple (_type_): various tensorflow parameters
     """
 
-    dataset_path: os.PathLike
-    aligns_path: os.PathLike
+    dataset_path: Path
+    aligns_path: Path
     epochs: int
     frame_count: int
     image_width: int
@@ -50,12 +57,94 @@ class TrainingConfig(NamedTuple):
     use_cache: bool
 
 
-def main():
-    """Entry point of the script for training a model."""
+def train(timestring: str, config: TrainingConfig):
+    """Training script
+
+    Args:
+        timestamp (float): current utc timestamp
+        config (TrainingConfig): config class
+    """
+
+    logger = get_logger("LipNet")
+
+    logger.info(f"Time: {timestring}")
+
+    logger.info(f"Dataset: {config.dataset_path}")
+    logger.info(f"Aligns: {config.aligns_path}")
+
+    lipnet_config = LipNetConfig(
+        frame_count=config.frame_count,
+        image_height=config.image_height,
+        image_width=config.image_width,
+        image_channels=config.image_channels,
+        max_string=config.max_string,
+        output_size=28,
+    )
+    lipnet = LipNet(lipnet_config)
+    lipnet.compile()
+
+    datagen = DatasetGenerator(
+        config.dataset_path,
+        config.aligns_path,
+        config.batch_size,
+        config.max_string,
+        config.val_split,
+        config.use_cache,
+    )
+
+    callbacks = create_callbacks(timestring)
+
+    logger.info("Start training")
+
+    lipnet.fit(
+        x=datagen.train_generator,
+        validation_data=datagen.val_generator,
+        epochs=config.epochs,
+        verbose=1,
+        shuffle=True,
+        max_queue_size=5,
+        workers=2,
+        callbacks=callbacks,
+        use_multiprocessing=True,
+    )
+
+
+def create_callbacks(timestring: str) -> List[Callback]:
+    """Create TF callback function list
+
+    Args:
+        timestring (str): utc timestring
+
+    Returns:
+        list: list of tf.keras.callbacks
+    """
+
+    # check log path
+    batch_log_dir = LOG_PATH.joinpath(timestring)
+    batch_log_dir.mkdir(exist_ok=True)
+
+    # Tensorboard
+    tensorboard = TensorBoard(log_dir=str(batch_log_dir))
+
+    # Model checkpoint saver
+    checkpoint_dir = LIPNET_MODEL_SAVE_PATH.joinpath(timestring)
+    checkpoint_dir.mkdir(exist_ok=True)
+    checkpoint = ModelCheckpoint(
+        filepath=checkpoint_dir.joinpath("lipnet_{epoch:02d}_{val_loss:.2f}.h5"),
+        monitor="val_loss",
+        save_weights_only=True,
+        mode="auto",
+        verbose=1,
+    )
+
+    return [checkpoint, tensorboard]
+
+
+if __name__ == "__main__":
     dataset_path = DATA_PATH
     aligns_path = ALIGN_PATH
 
-    timestamp = datetime.utcnow().timestamp()
+    timestring = datetime.utcnow().strftime(DATETIME_FMT)
 
     config = TrainingConfig(
         dataset_path=dataset_path,
@@ -71,102 +160,4 @@ def main():
         use_cache=bool(os.environ.get("USE_CACHE", True)),
     )
 
-    train(timestamp, config)
-
-
-def train(timestamp: float, config: TrainingConfig):
-    """Training script
-
-    Args:
-        timestamp (float): current utc timestamp
-        config (TrainingConfig): config class
-    """
-
-    logger = get_logger("lipnet_training")
-    logger.info(
-        "TRAINING: {}".format(
-            datetime.utcfromtimestamp(timestamp).strftime(DATETIME_FMT)
-        )
-    )
-
-    logger.info("For dataset at: {}".format(config.dataset_path))
-    logger.info("With aligns at: {}".format(config.aligns_path))
-
-    lipnet = LipNet(
-        config.frame_count,
-        config.image_channels,
-        config.image_height,
-        config.image_width,
-        config.max_string,
-    )
-    lipnet.compile()
-
-    datagen = DatasetGenerator(
-        config.dataset_path,
-        config.aligns_path,
-        config.batch_size,
-        config.max_string,
-        config.val_split,
-        config.use_cache,
-    )
-
-    callbacks = create_callbacks(timestamp, lipnet, datagen)
-
-    logger.info("Starting training...")
-
-    start_time = time.time()
-
-    lipnet.fit(
-        x=datagen.train_generator,
-        validation_data=datagen.val_generator,
-        epochs=config.epochs,
-        verbose=1,
-        shuffle=True,
-        max_queue_size=5,
-        workers=2,
-        callbacks=callbacks,
-        use_multiprocessing=True,
-    )
-
-    elapsed_time = time.time() - start_time
-    print("Training completed in: {}".format(timedelta(seconds=elapsed_time)))
-
-
-def create_callbacks(
-    timestamp: float, lipnet: LipNet, datagen: DatasetGenerator
-) -> list:
-    """Create TF callback function list
-
-    Args:
-        timestamp (float): utc timestamp
-        lipnet (LipNet): LipNet model
-        datagen (DatasetGenerator): batch data generator
-
-    Returns:
-        list: list of tf.keras.callbacks
-    """
-    timestring = datetime.utcfromtimestamp(timestamp).strftime(DATETIME_FMT)
-
-    # check log path
-    batch_log_dir = LOG_PATH.joinpath(timestring)
-    batch_log_dir.mkdir(exist_ok=True)
-
-    # Tensorboard
-    tensorboard = TensorBoard(LOG_PATH=str(batch_log_dir))
-
-    # Model checkpoint saver
-    checkpoint_dir = LIPNET_MODEL_SAVE_PATH.joinpath(timestring)
-    checkpoint_dir.mkdir(exist_ok=True)
-    checkpoint = ModelCheckpoint(
-        filepath=checkpoint_dir.joinpath("lipnet_{epoch:03d}_{loss:.2f}.h5"),
-        monitor="val_loss",
-        save_weights_only=True,
-        mode="auto",
-        verbose=1,
-    )
-
-    return [checkpoint, tensorboard]
-
-
-if __name__ == "__main__":
-    main()
+    train(timestring, config)
