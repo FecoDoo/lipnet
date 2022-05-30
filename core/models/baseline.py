@@ -18,12 +18,12 @@ from tensorflow.keras.layers import (
     RandomContrast,
     Rescaling,
 )
-from core.utils.types import Stream
+from core.utils.types import Stream, Path
 from utils.logger import get_logger
 
 
 class BaseLineModel(object):
-    def __init__(self, config: dataclass, base_model=None, mode: bool = 0) -> None:
+    def __init__(self, config, base_model=None, mode: int = 0) -> None:
         """init baseline model
 
         Args:
@@ -34,9 +34,7 @@ class BaseLineModel(object):
             ValueError: if mode is neither training nor predicting
         """
         input_shape = self.get_input_shape(
-            config.image_height,
-            config.image_width,
-            config.image_channels,
+            config.image_height, config.image_width, config.image_channels,
         )
 
         self.logger = get_logger(name="baseline")
@@ -78,20 +76,15 @@ class BaseLineModel(object):
         )
 
         self.baseline_custom_dense_layer_0 = Dense(
-            name="baseline_custom_dense_layer_0",
-            units=4096,
-            activation="relu",
+            name="baseline_custom_dense_layer_0", units=4096, activation="relu",
         )(self.baseline_basemodel_output)
 
         self.baseline_custom_dense_layer_1 = Dense(
-            name="baseline_custom_dense_layer_1",
-            units=2048,
-            activation="relu",
+            name="baseline_custom_dense_layer_1", units=2048, activation="relu",
         )(self.baseline_custom_dense_layer_0)
 
         self.baseline_custom_dropout_layer_0 = Dropout(
-            name="baseline_custom_dropout_layer_0",
-            rate=0.5,
+            name="baseline_custom_dropout_layer_0", rate=0.5,
         )(self.baseline_custom_dense_layer_1)
 
         self.baseline_custom_batchnorm_layer_0 = BatchNormalization(
@@ -99,9 +92,7 @@ class BaseLineModel(object):
         )(self.baseline_custom_dropout_layer_0)
 
         self.baseline_custom_output_layer = Dense(
-            name="baseline_custom_output_layer",
-            units=7,
-            activation="softmax",
+            name="baseline_custom_output_layer", units=7, activation="softmax",
         )(self.baseline_custom_batchnorm_layer_0)
 
         self.model = Model(
@@ -122,7 +113,7 @@ class BaseLineModel(object):
     def summary(self):
         return self.model.summary()
 
-    def load_weights(self, path: os.PathLike):
+    def load_weights(self, path: Path):
         if not path.exists():
             raise FileNotFoundError("model weights not found")
 
@@ -190,13 +181,9 @@ class BaseLineModel(object):
 
 
 class DenseNet_Baseline(BaseLineModel):
-    def __init__(self, config: dataclass, base_model=None, mode: bool = 0) -> None:
+    def __init__(self, config, base_model=None, mode: int = 0) -> None:
 
-        base_model = DenseNet121(
-            weights="imagenet",
-            include_top=False,
-            pooling="avg",
-        )
+        base_model = DenseNet121(weights="imagenet", include_top=False, pooling="avg",)
 
         super().__init__(config, base_model, mode)
 
@@ -204,11 +191,7 @@ class DenseNet_Baseline(BaseLineModel):
 class Xception_Baseline(BaseLineModel):
     def __init__(self, config: dataclass, base_model=None, mode: bool = 0) -> None:
 
-        base_model = Xception(
-            weights="imagenet",
-            include_top=False,
-            pooling="avg",
-        )
+        base_model = Xception(weights="imagenet", include_top=False, pooling="avg",)
 
         super().__init__(config, base_model, mode)
 
@@ -216,11 +199,7 @@ class Xception_Baseline(BaseLineModel):
 class VGG19_Baseline(BaseLineModel):
     def __init__(self, config: dataclass, base_model=None, mode: bool = 0) -> None:
 
-        base_model = VGG19(
-            weights="imagenet",
-            include_top=False,
-            pooling="avg",
-        )
+        base_model = VGG19(weights="imagenet", include_top=False, pooling="avg",)
 
         super().__init__(config, base_model, mode)
 
@@ -228,10 +207,6 @@ class VGG19_Baseline(BaseLineModel):
 class MobileNet_Baseline(BaseLineModel):
     def __init__(self, config: dataclass, base_model=None, mode: bool = 0) -> None:
 
-        base_model = MobileNet(
-            weights="imagenet",
-            include_top=False,
-            pooling="avg",
-        )
+        base_model = MobileNet(weights="imagenet", include_top=False, pooling="avg",)
 
         super().__init__(config, base_model, mode)

@@ -1,9 +1,8 @@
 import numpy as np
+import math
 import os
 from tensorflow.keras.utils import Sequence
-from core.utils.video import (
-    video_sampling_frames,
-)
+from core.utils.video import video_sampling_frames
 from core.utils.types import List, Tuple, Stream, Path
 from core.utils.config import emotion
 from utils.logger import get_logger
@@ -54,7 +53,7 @@ class BatchGenerator(Sequence):
 
         self.n_samples = len(self.face_paths)
 
-        self.generator_steps = int(np.ceil(self.n_samples / self.batch_size))
+        self.generator_steps = math.ceil(self.n_samples / self.batch_size)
 
         self.face_batch_shape = (
             num_frames,
