@@ -1,4 +1,5 @@
 import numpy as np
+import math
 import os
 from tensorflow.keras.utils import Sequence
 from core.utils.video import video_flip
@@ -32,9 +33,9 @@ class BatchGenerator(Sequence):
         self.batch_size = batch_size
 
         self.n_videos = len(self.video_paths)
-        self.n_videos_per_batch = int(np.ceil(self.batch_size / 2))
+        self.n_videos_per_batch = math.ceil(self.batch_size / 2)
 
-        self.generator_steps = int(np.ceil(self.n_videos / self.n_videos_per_batch))
+        self.generator_steps = math.ceil(self.n_videos / self.n_videos_per_batch)
 
     def __len__(self) -> int:
         return self.generator_steps
@@ -78,6 +79,7 @@ class BatchGenerator(Sequence):
                 sentences.append(sentence)
 
         batch_size = len(x_data)
+        print(batch_size)
 
         x_data = np.stack(arrays=x_data, axis=0)
         x_data = self.standardize_batch(x_data)

@@ -19,5 +19,5 @@ def display_results(
             print("Video: {}\nResult: {}".format(video_path, r))
 
         if visualize:
-            stream = video_read(video_path, complete=True)
+            stream = video_read(video_path=video_path)
             visualize_video_subtitle(stream, r)

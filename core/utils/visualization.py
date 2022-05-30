@@ -2,7 +2,7 @@ import numpy as np
 from matplotlib import patheffects as path_effects, pyplot as plt
 from core.utils.types import Stream
 
-FRAME_RATE = 1 / 25
+FRAME_RATE = 25
 
 
 def visualize_video_subtitle(stream: Stream, subtitle: str, swap_axes: bool = False):
@@ -36,7 +36,7 @@ def visualize_video_subtitle(stream: Stream, subtitle: str, swap_axes: bool = Fa
 
     img = None
 
-    for i, frame in enumerate(stream):
+    for i, frame in enumerate(stream.tolist()):
         sub = " ".join(subs[: int(i / inc)])
         text.set_text(sub)
 

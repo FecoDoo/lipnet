@@ -4,8 +4,8 @@ import numpy as np
 import random
 from pathlib import Path
 from functools import wraps
-from skvideo.io import vread, ffprobe
-from core.utils.types import Stream, Optional, Frame, Union, Tuple, List, Path
+from skvideo.io import vread
+from core.utils.types import Stream, Frame, Union, Tuple, List, Path
 
 
 def video_input_validation(func):
@@ -30,16 +30,15 @@ def video_to_numpy(stream: Stream, output_path: Path) -> None:
     np.save(output_path, stream, allow_pickle=False)
 
 
-def video_read(
-    video_path: Path, num_frames: int = 75, complete: bool = False
-) -> Stream:
+def video_read(video_path: Path, num_frames: int = 75) -> Stream:
     """Load video to array
 
     Args:
         video_path (Path): video file path
         num_frames (int, optional): read first n frames. Defaults to 75.
-        entire (bool): if true, ignore num_frames and load the entire video file into memory
-        This may be risky when loading large video file which may leads to running out of memory
+
+    Raises:
+        ValueError: It may be risky when loading large video file which may leads to running out of memory
 
     Returns:
         Optional[Stream]: video stream, in the format of (T x H x W x C)
@@ -50,24 +49,12 @@ def video_read(
     if not video_path.is_file():
         raise ValueError(f"{video_path} does not exist")
 
-    if complete:
-        if metadata := ffprobe(video_path):
-            if video_info := metadata.get("video"):
-                num_frames = video_info.get("@nb_frames")
+    if num_frames > 1000:
+        warnings.warn(
+            f"video {video_path} contains more than 1000 frames, which might lead to OOM error"
+        )
 
-        if num_frames is None:
-            raise ValueError(f"could not read metadata from {video_path}")
-
-        num_frames = int(num_frames)
-
-        if num_frames > 1000:
-            warnings.warn(
-                f"video {video_path} contains more than 1000 frames, which might lead to OOM error"
-            )
-
-        stream = vread(fname=video_path, num_frames=int(num_frames) - 1)
-    else:
-        stream = vread(fname=video_path, num_frames=num_frames)
+    stream = vread(fname=video_path, num_frames=num_frames)
 
     return stream
 
