@@ -24,7 +24,7 @@ emotion = {
     "disgust": 1,
     "fear": 2,
     "happy": 3,
-    "sad": 4,
-    "surprise": 5,
-    "neutral": 6,
+    "neutral": 4,
+    "sad": 5,
+    "surprise": 6,
 }

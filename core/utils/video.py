@@ -50,9 +50,7 @@ def video_read(video_path: Path, num_frames: int = 75) -> Stream:
         raise ValueError(f"{video_path} does not exist")
 
     if num_frames > 1000:
-        warnings.warn(
-            f"video {video_path} contains more than 1000 frames, which might lead to OOM error"
-        )
+        warnings.warn("reading more than 1000 frames might lead to OOM error")
 
     stream = vread(fname=video_path, num_frames=num_frames)
 

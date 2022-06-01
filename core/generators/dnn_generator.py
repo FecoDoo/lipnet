@@ -61,16 +61,6 @@ class BatchGenerator(Sequence):
             self.face_frame_shape[1],
         )
 
-        # image preprocess
-        self.face_salt = np.stack(
-            [
-                np.zeros(shape=self.face_batch_shape, dtype=np.float32) - 103.939,
-                np.zeros(shape=self.face_batch_shape, dtype=np.float32) - 116.779,
-                np.zeros(shape=self.face_batch_shape, dtype=np.float32) - 123.68,
-            ],
-            axis=-1,
-        )
-
     def __len__(self) -> int:
         return self.generator_steps
 
@@ -113,9 +103,6 @@ class BatchGenerator(Sequence):
         inputs = [np.stack(faces, axis=0), np.stack(lips, axis=0)]
 
         return inputs, np.stack(labels, axis=0)
-
-    def preprocessing_face_stream(self, batch: Stream) -> Stream:
-        return batch + self.face_salt
 
     def preprocessing_lip_stream(self, batch: Stream) -> Stream:
         return (batch - self.__video_mean) / self.__video_std
