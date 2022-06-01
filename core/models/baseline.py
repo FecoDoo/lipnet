@@ -1,34 +1,24 @@
-import os
 from dataclasses import dataclass
 from numpy import ndarray
-from tensorflow.keras import Sequential
 from tensorflow.keras.applications.xception import Xception, preprocess_input
 from tensorflow.keras.applications.densenet import DenseNet121, preprocess_input
 from tensorflow.keras.applications.vgg19 import VGG19, preprocess_input
 from tensorflow.keras.applications.mobilenet import MobileNet, preprocess_input
-
 from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import Model
 from tensorflow.keras.backend import function, image_data_format
 from tensorflow.keras.layers import Dense, Dropout, BatchNormalization, Input
-from tensorflow.keras.layers import (
-    RandomFlip,
-    RandomRotation,
-    RandomContrast,
-    Rescaling,
-)
 from core.utils.types import Stream, Path
 from utils.logger import get_logger
 
 
 class BaseLineModel(object):
-    def __init__(self, config, base_model=None, mode: int = 0) -> None:
+    def __init__(self, config, base_model=None) -> None:
         """init baseline model
 
         Args:
             config (dataclass): pre-trained model config
-            mode (bool, optional): choose running mode. Defaults 0 stands for training and True for predicting.
 
         Raises:
             ValueError: if mode is neither training nor predicting
@@ -48,31 +38,8 @@ class BaseLineModel(object):
             shape=input_shape, name="baseline_custom_input_lauyer"
         )
 
-        if mode == 0:
-            self.logger.info("start training")
-            self.baseline_argumentation = Sequential(
-                layers=[
-                    RandomFlip("horizontal"),
-                    RandomRotation(0.1),
-                    RandomContrast(0.1),
-                ],
-                name="baseline_custom_argumentation_layer",
-            )(self.baseline_custom_input_lauyer)
-
-            self.baseline_custom_rescaling_layer = Rescaling(
-                scale=1 / 127.5, offset=-1, name="baseline_custom_rescaling_layer"
-            )(self.baseline_argumentation)
-
-        elif mode == 1:
-            self.logger.info("start predicting")
-            self.baseline_custom_rescaling_layer = Rescaling(
-                scale=1.0 / 127.5, offset=-1, name="baseline_custom_rescaling_layer"
-            )(self.baseline_custom_input_lauyer)
-        else:
-            raise ValueError("mode can only be either 0 (training) or 1 (predicting)")
-
         self.baseline_basemodel_output = self.base_model(
-            self.baseline_custom_rescaling_layer, training=False
+            self.baseline_custom_input_lauyer, training=False
         )
 
         self.baseline_custom_dense_layer_0 = Dense(
@@ -181,32 +148,32 @@ class BaseLineModel(object):
 
 
 class DenseNet_Baseline(BaseLineModel):
-    def __init__(self, config, base_model=None, mode: int = 0) -> None:
+    def __init__(self, config: dataclass) -> None:
 
         base_model = DenseNet121(weights="imagenet", include_top=False, pooling="avg",)
 
-        super().__init__(config, base_model, mode)
+        super().__init__(config, base_model)
 
 
 class Xception_Baseline(BaseLineModel):
-    def __init__(self, config: dataclass, base_model=None, mode: bool = 0) -> None:
+    def __init__(self, config: dataclass) -> None:
 
         base_model = Xception(weights="imagenet", include_top=False, pooling="avg",)
 
-        super().__init__(config, base_model, mode)
+        super().__init__(config, base_model)
 
 
 class VGG19_Baseline(BaseLineModel):
-    def __init__(self, config: dataclass, base_model=None, mode: bool = 0) -> None:
+    def __init__(self, config: dataclass) -> None:
 
         base_model = VGG19(weights="imagenet", include_top=False, pooling="avg",)
 
-        super().__init__(config, base_model, mode)
+        super().__init__(config, base_model)
 
 
 class MobileNet_Baseline(BaseLineModel):
-    def __init__(self, config: dataclass, base_model=None, mode: bool = 0) -> None:
+    def __init__(self, config: dataclass) -> None:
 
         base_model = MobileNet(weights="imagenet", include_top=False, pooling="avg",)
 
-        super().__init__(config, base_model, mode)
+        super().__init__(config, base_model)

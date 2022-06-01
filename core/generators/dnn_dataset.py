@@ -14,7 +14,7 @@ class DatasetGenerator(object):
         dataset_path: Path,
         batch_size: int = 8,
         num_frames: int = 75,
-        val_split: float = 0.2,
+        val_split: float = 0.15,
         use_cache: bool = True,
     ):
         self.dataset_path = dataset_path
@@ -117,7 +117,7 @@ class DatasetGenerator(object):
             n_samples = len(group)
             val_amount = int(round(n_samples * val_split))
 
-            train += group[val_amount:]
             val += group[:val_amount]
+            train += group[val_amount:]
 
         return train, val
