@@ -159,9 +159,10 @@ def video_sampling_frames(stream: Stream, num_frames: int = 75) -> Stream:
     if n < num_frames:
         return video_sampling_frames(stream=np.repeat(stream, 2), num_frames=num_frames)
     else:
-        idx = random.sample(population=range(0, n), k=num_frames)
-        idx.sort()
-        return stream[idx]
+        windows = np.lib.stride_tricks.sliding_window_view(x=stream, window_shape=num_frames, axis=0)
+        windows = np.moveaxis(a=windows, source=-1, destination=1)
+
+        return random.choice(windows)
 
 
 def video_padding_frames(stream: Stream) -> Stream:
