@@ -1,11 +1,11 @@
-import os
 import core.models.layers as layers
 from tensorflow.keras import backend as k
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from core.utils.config import LipNetConfig
+from core.utils.types import Path
 
-ADAM_LEARN_RATE = 0.0001
+ADAM_LEARN_RATE = 1e-4
 ADAM_F_MOMENTUM = 0.9
 ADAM_S_MOMENTUM = 0.999
 ADAM_STABILITY = 1e-08
@@ -13,8 +13,7 @@ ADAM_STABILITY = 1e-08
 
 class LipNet(object):
     def __init__(
-        self,
-        config: LipNetConfig,
+        self, config: LipNetConfig,
     ):
         input_shape = self.get_input_shape(
             config.frame_count,
@@ -111,13 +110,13 @@ class LipNet(object):
         )
 
         self.input_labels = layers.create_input_layer(
-            name="lipnet_labels", shape=[config.max_string]
+            name="lipnet_labels", shape=[config.max_string], dtype="uint8"
         )
         self.input_length = layers.create_input_layer(
-            name="lipnet_input_length", shape=[1], dtype="int64"
+            name="lipnet_input_length", shape=[1], dtype="uint8"
         )
         self.label_length = layers.create_input_layer(
-            name="lipnet_label_length", shape=[1], dtype="int64"
+            name="lipnet_label_length", shape=[1], dtype="uint8"
         )
 
         self.loss_out = layers.create_ctc_layer(
@@ -138,7 +137,7 @@ class LipNet(object):
             outputs=self.loss_out,
         )
 
-    def compile(self, optimizer=None):
+    def compile(self, optimizer=None, *args, **kwargs):
         if optimizer is None:
             optimizer = Adam(
                 learning_rate=ADAM_LEARN_RATE,
@@ -148,20 +147,24 @@ class LipNet(object):
             )
 
         self.model.compile(
-            loss={"ctc": lambda inputs, outputs: outputs}, optimizer=optimizer
+            loss={"lipnet_ctc": lambda inputs, outputs: outputs},
+            optimizer=optimizer,
+            metrics=["accuracy"],
+            *args,
+            **kwargs
         )
 
-    def fit(self, *args, **kw):
-        self.model.fit(*args, **kw)
+    def fit(self, *args, **kwargs):
+        self.model.fit(*args, **kwargs)
 
-    def load_weights(self, path: os.PathLike):
+    def load_weights(self, path: Path, *args, **kwargs):
         if not path.exists():
             raise FileNotFoundError("model weights not found")
 
-        self.model.load_weights(path)
+        self.model.load_weights(path, *args, **kwargs)
 
-    def summary(self):
-        return self.model.summary()
+    def summary(self, *args, **kwargs):
+        return self.model.summary(*args, **kwargs)
 
     @staticmethod
     def get_input_shape(
