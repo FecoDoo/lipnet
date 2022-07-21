@@ -124,6 +124,9 @@ class DNN(object):
     def predict(self, input_batch: Stream, *args, **kwargs):
         return self.model.predict(input_batch, *args, **kwargs)
 
+    def save(self, filepath: Path, *args, **kwargs):
+        self.model.save(filepath=path, *args, **kwargs)
+
     @property
     def input(self):
         return self.model.input
