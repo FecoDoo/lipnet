@@ -1,5 +1,6 @@
 import os
 import sys
+from cv2 import split
 import numpy as np
 from dotenv import load_dotenv
 from datetime import datetime
@@ -17,7 +18,7 @@ sys.path.insert(0, str(root))
 assert load_dotenv(".env")
 
 training_timestamp = datetime.utcnow().strftime(os.environ["DATETIME_FMT"])
-data_dir = root.joinpath("data/ravdess/videos")
+data_dir = root.joinpath("data/ravdess")
 
 batch_size = 4
 epochs = 20  # 训练轮数
@@ -34,7 +35,7 @@ model = DNN(
     baseline_model_weight=root.joinpath("models/baseline/mobilenet"),
 )
 
-model.compile(learning_rate=1e-3, metrics=["accuracy"])
+model.compile(learning_rate=1e-4, metrics=["accuracy"])
 
 # paths
 log_dir = root.joinpath(os.path.join("logs/dnn/", training_timestamp))
@@ -44,19 +45,9 @@ model_save_dir.mkdir(exist_ok=True)
 log_dir.mkdir(exist_ok=True)
 
 # create generator
-from core.generators.dnn_generator import VideoSampleGenerator
+from core.generators.dnn_dataset import DatasetGenerator
 
-video_paths = list(data_dir.rglob("*.mp4"))
-
-n_videos = len(video_paths)
-split_pivot = int(np.floor(n_videos * 0.8))
-
-generator_train = VideoSampleGenerator(
-    video_paths=video_paths[:split_pivot], batch_size=batch_size
-)
-generator_test = VideoSampleGenerator(
-    video_paths=video_paths[split_pivot:], batch_size=batch_size
-)
+dataset = DatasetGenerator(dataset_path=data_dir, batch_size=batch_size, val_split=0.2)
 
 
 def generate_callbacks(model_name: str) -> list:
@@ -94,9 +85,11 @@ def generate_callbacks(model_name: str) -> list:
 if __name__ == "__main__":
     callbacks = generate_callbacks("dnn")
 
+    model.load_weights(root.joinpath("models/dnn/2022-05-19_1936/dnn_12_0.23.h5"))
+
     history = model.fit(
-        x=generator_train,
+        x=dataset.train,
         epochs=20,
         callbacks=callbacks,
-        validation_data=generator_test,
+        validation_data=dataset.validation,
     )
