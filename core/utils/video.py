@@ -159,7 +159,9 @@ def video_sampling_frames(stream: Stream, num_frames: int = 75) -> Stream:
     if n < num_frames:
         return video_sampling_frames(stream=np.repeat(stream, 2), num_frames=num_frames)
     else:
-        windows = np.lib.stride_tricks.sliding_window_view(x=stream, window_shape=num_frames, axis=0)
+        windows = np.lib.stride_tricks.sliding_window_view(
+            x=stream, window_shape=num_frames, axis=0
+        )
         windows = np.moveaxis(a=windows, source=-1, destination=1)
 
         return random.choice(windows)
