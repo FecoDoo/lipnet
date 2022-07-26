@@ -168,9 +168,20 @@ data/*
 
 misc/
 logs/
-models/
 custom/
 utils/predictors/
 videos/
 images/
+test/
+docs/
 .cache
+
+models/
+!core/models
+
+script/
+!script/training/
+
+slurm*.out
+*.sh
+*.npy

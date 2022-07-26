@@ -1,9 +1,10 @@
 # Helper functions to transform between text<->labels
 # Source: https://github.com/rizkiarm/LipNet/blob/master/lipnet/lipreading/helpers.py
-from typing import List
+import numpy as np
+from core.utils.types import Labels
 
 
-def text_to_labels(text: str) -> List[chr]:
+def text_to_labels(text: str) -> Labels:
     ret = []
     for char in text:
         if "a" <= char <= "z":
@@ -11,13 +12,13 @@ def text_to_labels(text: str) -> List[chr]:
         elif char == " ":
             ret.append(26)
 
-    return ret
+    return np.array(ret, dtype=np.uint8)
 
 
-def labels_to_text(labels: List[chr]) -> str:
+def labels_to_text(labels: Labels) -> str:
     # 26 is space, 27 is CTC blank char
     text = ""
-    for c in labels:
+    for c in labels.tolist():
         if 0 <= c < 26:
             text += chr(c + ord("a"))
         elif c == 26:

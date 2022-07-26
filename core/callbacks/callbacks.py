@@ -1,19 +1,25 @@
 import csv
-import os
 import editdistance
 import numpy as np
 from tensorflow.keras.callbacks import Callback, CSVLogger, ModelCheckpoint, TensorBoard
 from tensorflow.keras.utils import Sequence
 from core.decoding.decoder import Decoder
-from core.model.lipnet import LipNet
-from core.utils.wer import wer_sentence
-from typing import List, Tuple
+from core.models.lipnet import LipNet
+from core.utils.types import List, Tuple, Callable, Path
+from jiwer import (
+    wer,
+    Compose,
+    ToLowerCase,
+    RemoveWhiteSpace,
+    RemoveMultipleSpaces,
+    ReduceToListOfListOfWords,
+)
 
 
 class ErrorRates(Callback):
     def __init__(
         self,
-        output_path: os.PathLike,
+        output_path: Path,
         lipnet: LipNet,
         val_generator: Sequence,
         decoder: Decoder,
@@ -26,6 +32,14 @@ class ErrorRates(Callback):
         self.generator = val_generator.__getitem__
         self.decoder = decoder
         self.samples = samples
+        self.transformation = Compose(
+            [
+                ToLowerCase(),
+                RemoveWhiteSpace(replace_by_space=True),
+                RemoveMultipleSpaces(),
+                ReduceToListOfListOfWords(word_delimiter=" "),
+            ]
+        )
 
     def get_sample_batch(self) -> list:
         sample_batch = []
@@ -54,22 +68,31 @@ class ErrorRates(Callback):
 
         return sample_batch
 
-    @staticmethod
     def calculate_mean_generic(
-        data: List[tuple], mean_length: int, evaluator: callable
+        self, data: List[tuple], mean_length: int, evaluator: Callable
     ) -> Tuple[float, float]:
-        values = np.array([float(evaluator(x[0], x[1])) for x in data])
+        values = np.array(
+            [
+                evaluator(
+                    groud_truth=x[0],
+                    hypothesis=x[1],
+                    truth_transform=self.transformation,
+                    hypothesis_transform=self.transformation,
+                )
+                for x in data
+            ]
+        )
 
         length = len(data)
-        total = np.sum(values)
-        mean = total / length
-        total_norm = total / mean_length
+        total_error = np.sum(values)
+        mean_error = total_error / length
+        total_norm = total_error / mean_length
 
-        return mean, total_norm / length
+        return mean_error, total_norm / length
 
     def calculate_wer(self, data: List[tuple]) -> Tuple[float, float]:
         mean_length = int(np.mean([len(d[1].split()) for d in data]))
-        return self.calculate_mean_generic(data, mean_length, wer_sentence)
+        return self.calculate_mean_generic(data, mean_length, wer)
 
     def calculate_cer(self, data: List[tuple]) -> Tuple[float, float]:
         mean_length = int(np.mean([len(d[1]) for d in data]))
