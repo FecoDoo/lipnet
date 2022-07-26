@@ -1,16 +1,9 @@
 import os
 import sys
-from cv2 import split
-import numpy as np
 from dotenv import load_dotenv
 from datetime import datetime
 from pathlib import Path
-from tensorflow.keras.callbacks import (
-    ReduceLROnPlateau,
-    ModelCheckpoint,
-    EarlyStopping,
-    TensorBoard,
-)
+from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, TensorBoard
 
 root = Path(__file__).parents[2].resolve()
 sys.path.insert(0, str(root))
@@ -85,11 +78,9 @@ def generate_callbacks(model_name: str) -> list:
 if __name__ == "__main__":
     callbacks = generate_callbacks("dnn")
 
-    model.load_weights(root.joinpath("models/dnn/2022-05-19_1936/dnn_12_0.23.h5"))
-
     history = model.fit(
         x=dataset.train,
-        epochs=20,
+        epochs=epochs,
         callbacks=callbacks,
         validation_data=dataset.validation,
     )
