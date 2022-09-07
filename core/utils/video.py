@@ -143,13 +143,14 @@ def video_transform(
 
 
 @video_input_validation
-def video_sampling_frames(stream: Stream, num_frames: int = 75) -> Stream:
+def video_sampling_frames(stream: Stream, num_frames: int = 75, enable_random = False) -> Stream:
     """Sample new stream of size num_frames from original stream
 
     Args:
         stream (Stream): input stream
         num_frames (int, optional): desired output stream size. Defaults to 75.
-
+        enable_random (bool): False for randomly sampling and True for continously sampling
+        
     Returns:
         Stream: sampled stream
     """
@@ -159,12 +160,16 @@ def video_sampling_frames(stream: Stream, num_frames: int = 75) -> Stream:
     if n < num_frames:
         return video_sampling_frames(stream=np.repeat(stream, 2), num_frames=num_frames)
     else:
-        windows = np.lib.stride_tricks.sliding_window_view(
-            x=stream, window_shape=num_frames, axis=0
-        )
-        windows = np.moveaxis(a=windows, source=-1, destination=1)
-
-        return random.choice(windows)
+        if enable_random:
+            idx = random.sample(population=range(0, n), k=num_frames)
+            idx.sort()
+            return stream[idx]
+        else:
+            windows = np.lib.stride_tricks.sliding_window_view(
+                x=stream, window_shape=num_frames, axis=0
+            )
+            windows = np.moveaxis(a=windows, source=-1, destination=1)
+            return random.choice(windows)
 
 
 def video_padding_frames(stream: Stream) -> Stream:

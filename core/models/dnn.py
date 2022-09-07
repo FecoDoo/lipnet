@@ -78,18 +78,21 @@ class DNN(object):
         ##########################################
 
         self.dnn_dense_0 = Dense(
-            name="dnn_dense_0", units=512, kernel_initializer="he_normal"
+            name="dnn_dense_0", units=1024, kernel_initializer="he_normal"
         )(self.dnn_gru_layer)
 
         # add fc layers
-        self.dnn_dropout_0 = Dropout(name="dnn_dropout_0", rate=0.5,)(self.dnn_dense_0)
+        self.dnn_dropout_0 = Dropout(name="dnn_dropout_0", rate=0.7,)(self.dnn_dense_0)
 
         self.dnn_dense_1 = Dense(
-            name="dnn_dense_1", units=256, kernel_initializer="he_normal"
+            name="dnn_dense_1", units=512, kernel_initializer="he_normal"
         )(self.dnn_dropout_0)
 
+         # add fc layers
+        self.dnn_dropout_1 = Dropout(name="dnn_dropout_1", rate=0.5,)(self.dnn_dense_1)
+
         self.dnn_output = Dense(name="dnn_output", units=7, activation="softmax",)(
-            self.dnn_dense_1
+            self.dnn_dropout_1
         )
 
         self.model = Model(
