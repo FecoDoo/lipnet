@@ -69,7 +69,7 @@ class DatasetGenerator(object):
 
     @staticmethod
     def get_video_files_in_dir(path: Path) -> List[Path]:
-        return list(path.glob("*.mp4"))
+        return list(path.glob("*.avi"))
 
     def locate_face_and_lip_paths(self, paths: List[Path]):
         face_paths = []

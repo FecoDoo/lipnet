@@ -93,10 +93,14 @@ class BatchGenerator(Sequence):
 
             # record results
             faces.append(
-                video_sampling_frames(stream=face_stream, num_frames=self.num_frames, enable_random=False)
+                video_sampling_frames(
+                    stream=face_stream, num_frames=self.num_frames, enable_random=False
+                )
             )
             lips.append(
-                video_sampling_frames(stream=lip_stream, num_frames=self.num_frames, enable_random=False)
+                video_sampling_frames(
+                    stream=lip_stream, num_frames=self.num_frames, enable_random=False
+                )
             )
             labels.append(label_num)
 

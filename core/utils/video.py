@@ -143,14 +143,16 @@ def video_transform(
 
 
 @video_input_validation
-def video_sampling_frames(stream: Stream, num_frames: int = 75, enable_random = False) -> Stream:
+def video_sampling_frames(
+    stream: Stream, num_frames: int = 75, enable_random=False
+) -> Stream:
     """Sample new stream of size num_frames from original stream
 
     Args:
         stream (Stream): input stream
         num_frames (int, optional): desired output stream size. Defaults to 75.
         enable_random (bool): False for randomly sampling and True for continously sampling
-        
+
     Returns:
         Stream: sampled stream
     """
@@ -158,7 +160,9 @@ def video_sampling_frames(stream: Stream, num_frames: int = 75, enable_random = 
     n = stream.shape[0]
 
     if n < num_frames:
-        return video_sampling_frames(stream=np.repeat(stream, 2), num_frames=num_frames)
+        return video_sampling_frames(
+            stream=np.repeat(a=stream, repeats=2, axis=0), num_frames=num_frames
+        )
     else:
         if enable_random:
             idx = random.sample(population=range(0, n), k=num_frames)

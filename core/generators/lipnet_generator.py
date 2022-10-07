@@ -4,6 +4,7 @@ import os
 from tensorflow.keras.utils import Sequence
 from core.utils.video import video_flip
 from core.utils.types import List, Tuple, Path, Stream, Labels
+from utils.logger import get_logger
 
 
 class BatchGenerator(Sequence):
@@ -33,12 +34,14 @@ class BatchGenerator(Sequence):
         self.batch_size = batch_size
 
         self.n_videos = len(self.video_paths)
-        self.n_videos_per_batch = math.ceil(self.batch_size / 2)
+        # self.n_videos_per_batch = math.ceil(self.batch_size / 2)
+        self.n_videos_per_batch = self.batch_size
 
-        self.generator_steps = math.ceil(self.n_videos / self.n_videos_per_batch)
+        self.n_batches = math.ceil(self.n_videos / self.n_videos_per_batch)
+        self.logger = get_logger("seq")
 
     def __len__(self) -> int:
-        return self.generator_steps
+        return self.n_batches
 
     def __getitem__(self, idx: int) -> Tuple[list, list]:
         split_start = idx * self.n_videos_per_batch
@@ -64,7 +67,7 @@ class BatchGenerator(Sequence):
             x_data.append(stream)
             y_data.append(labels)
             label_length.append(length)
-            input_length.append(len(stream))
+            input_length.append(stream.shape[0])
             sentences.append(sentence)
 
             if videos_to_augment > 0:
@@ -75,19 +78,25 @@ class BatchGenerator(Sequence):
                 x_data.append(video_argument)
                 y_data.append(labels)
                 label_length.append(length)
-                input_length.append(len(video_argument))
+                input_length.append(video_argument.shape[0])
                 sentences.append(sentence)
 
         batch_size = len(x_data)
-        print(batch_size)
 
+        # scaling
+        # x_data = self.standardize_batch(
+        #     np.stack(arrays=x_data, axis=0)
+        # )
         x_data = np.stack(arrays=x_data, axis=0)
-        x_data = self.standardize_batch(x_data)
 
-        y_data = np.array(y_data, np.uint8)
-        input_length = np.array(input_length, dtype=np.uint8)
-        label_length = np.array(label_length, dtype=np.uint8)
-        sentences = np.array(sentences)
+        # ctc seq
+        # y_data = np.array(y_data, np.uint8)
+        y_data = np.stack(arrays=y_data, axis=0)
+
+        #
+        input_length = np.stack(arrays=input_length, axis=0)
+        label_length = np.stack(arrays=label_length, axis=0)
+        sentences = np.stack(arrays=sentences, axis=0)
 
         inputs = [x_data, y_data, input_length, label_length]
 

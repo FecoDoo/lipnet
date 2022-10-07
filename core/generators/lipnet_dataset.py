@@ -64,9 +64,13 @@ class DatasetGenerator(object):
         )
 
         self.train_generator = BatchGenerator(
-            train_videos, train_aligns, self.batch_size
+            video_paths=train_videos,
+            align_hash=train_aligns,
+            batch_size=self.batch_size,
         )
-        self.val_generator = BatchGenerator(val_videos, val_aligns, self.batch_size)
+        self.val_generator = BatchGenerator(
+            video_paths=val_videos, align_hash=val_aligns, batch_size=self.batch_size
+        )
 
     @staticmethod
     def get_numpy_files_in_dir(path: Path) -> List[Path]:
