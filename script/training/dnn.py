@@ -1,5 +1,6 @@
 import os
 import sys
+import cv2
 from dotenv import load_dotenv
 from datetime import datetime
 from pathlib import Path
@@ -11,10 +12,10 @@ sys.path.insert(0, str(root))
 assert load_dotenv(".env")
 
 training_timestamp = datetime.utcnow().strftime(os.environ["DATETIME_FMT"])
-data_dir = root.joinpath("data/ravdess")
+data_dir = root.joinpath("data/mixed")
 
 batch_size = 4
-epochs = 20  # 训练轮数
+epochs = 60  # 训练轮数
 
 assert data_dir.exists()
 

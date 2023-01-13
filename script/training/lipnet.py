@@ -101,11 +101,11 @@ def train(timestring: str, config: TrainingConfig):
         validation_data=datagen.val_generator,
         epochs=config.epochs,
         verbose=1,
-        shuffle=True,
-        max_queue_size=5,
-        workers=2,
+        shuffle=False,
+        max_queue_size=1,
+        workers=1,
         callbacks=callbacks,
-        use_multiprocessing=True,
+        use_multiprocessing=False,
     )
 
 
