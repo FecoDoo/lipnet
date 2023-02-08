@@ -181,6 +181,8 @@ models/
 
 script/
 !script/training/
+!script/preprocessing/
+!script/evaluating/
 
 slurm*.out
 *.sh
